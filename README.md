@@ -1,16 +1,15 @@
-#Salim's Server Applicatie
-Welkom bij de serverapplicatie van Salim.
+# Salim's Server Applicatie
 
-#Installatie
-Om deze applicatie te installeren, volg je deze eenvoudige stappen:
+Welkom bij de serverapplicatie van Salim. Deze applicatie is bedoeld om [kort beschrijven van het doel of de functionaliteit van de applicatie].
 
-Zorg ervoor dat je Node.js hebt geïnstalleerd op je systeem.
-Open een terminalvenster.
-Navigeer naar de hoofdmap van de applicatie.
-Voer het volgende commando uit om alle benodigde afhankelijkheden te installeren:
-npm install
-Gebruik
-Zodra de installatie is voltooid, kun je de serverapplicatie starten met het volgende commando:
+## Installatie
 
-npm start
-Dit zal de server starten en klaar maken om verzoeken te ontvangen.
+Volg deze stappen om de applicatie te installeren:
+
+1. Zorg ervoor dat je **Node.js** geïnstalleerd hebt op je systeem. Je kunt Node.js downloaden van [nodejs.org](https://nodejs.org/).
+2. Open een terminalvenster.
+3. Navigeer naar de hoofdmap van de applicatie.
+4. Voer het volgende commando uit om alle benodigde afhankelijkheden te installeren:
+   ```bash
+   npm install
+   npm start
