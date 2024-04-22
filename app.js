@@ -2,7 +2,9 @@ const express = require('express')
 const app = express()
 const port = 3000
 const appname = 'Salim his app'
-const userRouter = require('./src/routes/user.routes');
+const userRouter = require('./src/routes/users.routes');
+const loginRouter = require('./src/routes/login.routes')
+const { authenticateToken } = require('./src/middleware/auth'); 
 
 app.use(express.json());
 
@@ -25,7 +27,23 @@ app.get('/info', (req, res) => {
 })
 
 app.use(userRouter)
+app.use(loginRouter)
 
+app.use((req, res, next) => {
+  next({
+      status: 404,
+      message: 'Route not found',
+      data: {}
+  })
+})
+
+app.use((error, req, res, next) => {
+  res.status(error.status || 500).json({
+      status: error.status || 500,
+      message: error.message || 'Internal Server Error',
+      data: {}
+  })
+})
 
 app.listen(port, () => {
   console.log( appname + ` is listening on port ${port}`)
