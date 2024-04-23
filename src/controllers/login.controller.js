@@ -18,14 +18,15 @@ let controller = {
       next()
     } catch (error) {
       console.log(error)
-      res.status(400).json({
+      const err ={
         status:400,
         result: error.toString()
-      })
-    }
+      }
+      next(err)
+      }
   
   },
-    loginUser: async (req, res) => {
+    loginUser: async (req, res, next) => {
         const { emailAddress, password } = req.body;
         console.log("Logging in with:", emailAddress, password); 
         database.findByEmail(emailAddress, async (err, user) => {
@@ -45,12 +46,16 @@ let controller = {
             res.json({ message: 'Login successful', token, user });
           } else {
             console.log("Password comparison failed"); 
-            res.status(401).json({ error: 'Authentication failed' });
+            const error ={
+              status:401,
+              result: 'Authentication failed'
+            }
+            next(error)
           }
         });
       },
 
-  registerUser: async (req, res) => {
+  registerUser: async (req, res, next) => {
     const { firstName, lastName, emailAddress, password } = req.body;
 
     if (!emailAddress || !password || !firstName || !lastName) {
@@ -67,7 +72,11 @@ let controller = {
       password: hashedPassword  
     }, (err, user) => {
       if (err) {
-        return res.status(500).json({ error: 'Internal server error' });
+        const error ={
+          status:500,
+          result: 'Internal server error'
+        }
+        next(error)
       }
       res.status(201).json({ message: 'User registered successfully', user });
     });

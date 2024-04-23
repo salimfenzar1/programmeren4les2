@@ -8,11 +8,17 @@ router.use(express.json());
 router.post('/api/user',loginController.validateUser, loginController.registerUser)
 router.post('/api/login', loginController.loginUser)
 
-router.get('/api/info', authenticateToken, (req, res) => {
+// router.delete('/api/user/:id', loginController.deleteUser)
+
+router.get('/api/info', authenticateToken, (req, res, next) => {
     const userId = req.user.userId;  
     database.getById(userId, (err, user) => {
         if (err || !user) {
-            return res.status(404).json({ message: "User not found" });
+            const error={
+                status:404,
+                message: 'User not found'
+            }
+            next(error)
         }
         res.json({
             studentName: user.firstName + " " + user.lastName,
