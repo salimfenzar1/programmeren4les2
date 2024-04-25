@@ -8,7 +8,7 @@ router.use(express.json());
 router.post('/api/user',loginController.validateUser, loginController.registerUser)
 router.post('/api/login', loginController.loginUser)
 
-// router.delete('/api/user/:id', loginController.deleteUser)
+router.delete('/api/user/:id', loginController.deleteUser)
 
 router.get('/api/info', authenticateToken, (req, res, next) => {
     const userId = req.user.userId;  

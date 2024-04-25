@@ -2,14 +2,13 @@ const express = require('express')
 const app = express()
 const port = 3000
 const appname = 'Salim his app'
-const userRouter = require('./src/routes/users.routes');
 const loginRouter = require('./src/routes/login.routes')
 const { authenticateToken } = require('./src/middleware/auth'); 
 
 app.use(express.json());
 
 app.all('*', (req, res, next) => {
-  console.log('testlog')
+  console.log('Er is op send gedrukt')
   next()
 })
 
@@ -26,7 +25,6 @@ app.get('/info', (req, res) => {
   res.json(info)
 })
 
-app.use(userRouter)
 app.use(loginRouter)
 
 app.use((req, res, next) => {
@@ -44,3 +42,4 @@ app.use((error, req, res, next) => {
 app.listen(port, () => {
   console.log( appname + ` is listening on port ${port}`)
 })
+module.exports = app

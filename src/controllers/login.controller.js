@@ -9,7 +9,9 @@ let controller = {
     let{firstName,lastName, emailAddress,password} = user
     try {
       if (!emailAddress || !password || !firstName || !lastName) {
-        return res.status(400).json({ error: 'All fields are required' });
+        return res.status(400).json({ 
+          status:400,
+          error: 'All fields are required' });
       }else{
         assert(typeof firstName === 'string','first name must be a string')
         assert(typeof lastName === 'string','last name must be a string')
@@ -58,10 +60,6 @@ let controller = {
   registerUser: async (req, res, next) => {
     const { firstName, lastName, emailAddress, password } = req.body;
 
-    if (!emailAddress || !password || !firstName || !lastName) {
-      return res.status(400).json({ error: 'All fields are required' });
-    }
-
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
 
@@ -79,6 +77,19 @@ let controller = {
         next(error)
       }
       res.status(201).json({ message: 'User registered successfully', user });
+    });
+  },
+  deleteUser: (req, res, next) => {
+    const { userId } = req.params; 
+  
+    database.deleteUserById(userId, (err) => {
+      if (err) {
+        console.log('Error deleting user:', err);
+        return res.status(500).json({ status: 500, result: 'Internal server error' });
+      }
+      res.status(200).json({ 
+        status:200,
+        message: 'User deleted successfully' });
     });
   }
 };
