@@ -5,7 +5,7 @@
   "scripts": {
     "start": "node app.js",
     "dev": "nodemon app.js",
-    "test": "mocha test/**/*.test.js"
+    "test": "node ./node_modules/mocha/bin/mocha --reporter spec --exit"
   },
   "dependencies": {
     "bcrypt": "^5.1.1",
