@@ -58,6 +58,7 @@ let controller = {
         });
       },
 
+
   registerUser: async (req, res, next) => {
     const { firstName, lastName, emailAddress, password } = req.body;
 
@@ -80,6 +81,27 @@ let controller = {
       res.status(201).json({ message: 'User registered successfully', user });
     });
   },
+  getAllUsers: (req, res, next) => {
+    database.getAll((err, users) => {
+        if (err) {
+            console.log('Error retrieving users:', err);
+            return res.status(500).json({
+                status: 500,
+                message: 'Internal server error while fetching users'
+            });
+        }
+
+        if (!users) {
+            users = []; 
+        }
+
+        res.status(200).json({
+            status: 200,
+            message: 'Users retrieved successfully',
+            data: users
+        });
+    });
+},
   deleteUser: (req, res, next) => {
     const { userId } = req.params; 
   
