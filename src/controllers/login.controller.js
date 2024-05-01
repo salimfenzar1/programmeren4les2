@@ -12,7 +12,7 @@ let controller = {
         return res.status(400).json({ 
           status:400,
           message: 'All fields are required',
-        data:{} });
+          data:{} });
       }else{
         assert(typeof firstName === 'string','first name must be a string')
         assert(typeof lastName === 'string','last name must be a string')
