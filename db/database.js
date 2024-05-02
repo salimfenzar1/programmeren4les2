@@ -42,7 +42,7 @@ module.exports = {
   },
 
   // Voor debug-doeleinden: toon alle gebruikers
-  getAll() {
-    return users;
+  getAll(callback) {
+    callback(null, users);
   }
 };

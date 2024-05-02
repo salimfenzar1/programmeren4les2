@@ -1,4 +1,4 @@
-const bcrypt = require('bcrypt');
+const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); 
 const database = require('../../db/database');
 const assert = require('assert')
@@ -11,7 +11,8 @@ let controller = {
       if (!emailAddress || !password || !firstName || !lastName) {
         return res.status(400).json({ 
           status:400,
-          error: 'All fields are required' });
+          message: 'All fields are required',
+          data:{} });
       }else{
         assert(typeof firstName === 'string','first name must be a string')
         assert(typeof lastName === 'string','last name must be a string')
@@ -57,6 +58,7 @@ let controller = {
         });
       },
 
+
   registerUser: async (req, res, next) => {
     const { firstName, lastName, emailAddress, password } = req.body;
 
@@ -79,6 +81,27 @@ let controller = {
       res.status(201).json({ message: 'User registered successfully', user });
     });
   },
+  getAllUsers: (req, res, next) => {
+    database.getAll((err, users) => {
+        if (err) {
+            console.log('Error retrieving users:', err);
+            return res.status(500).json({
+                status: 500,
+                message: 'Internal server error while fetching users'
+            });
+        }
+
+        if (!users) {
+            users = []; 
+        }
+
+        res.status(200).json({
+            status: 200,
+            message: 'Users retrieved successfully',
+            data: users
+        });
+    });
+},
   deleteUser: (req, res, next) => {
     const { userId } = req.params; 
   
