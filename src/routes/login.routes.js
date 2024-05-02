@@ -7,7 +7,7 @@ router.use(express.json());
 
 router.post('/api/user',loginController.validateUser, loginController.registerUser)
 router.post('/api/login', loginController.loginUser)
-router.get('/api/user' , loginController.getAllUsers)
+router.get('/api/user', authenticateToken, loginController.getAllUsers)
 router.delete('/api/user/:id', loginController.deleteUser)
 
 router.get('/api/info', authenticateToken, (req, res, next) => {

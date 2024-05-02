@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken'); 
 const database = require('../../db/database');
 const assert = require('assert')
+database.addTestUser()
 
 let controller = {
   validateUser:(req,res,next) =>{
@@ -59,28 +60,30 @@ let controller = {
       },
 
 
-  registerUser: async (req, res, next) => {
-    const { firstName, lastName, emailAddress, password } = req.body;
-
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
-
-    database.add({
-      firstName,
-      lastName,
-      emailAddress,
-      password: hashedPassword  
-    }, (err, user) => {
-      if (err) {
-        const error ={
-          status:500,
-          result: 'Internal server error'
-        }
-        next(error)
-      }
-      res.status(201).json({ message: 'User registered successfully', user });
-    });
-  },
+      registerUser: async (req, res, next) => {
+        const { firstName, lastName, emailAddress, password } = req.body;
+    
+        bcrypt.genSalt(10, async (err, salt) => {
+            if (err) {
+                return res.status(500).json({ status: 500, message: 'Error generating salt' });
+            }
+    
+            bcrypt.hash(password, salt, async (err, hashedPassword) => {
+                if (err) {
+                    return res.status(500).json({ status: 500, message: 'Error hashing password' });
+                }
+    
+                database.add({
+                    firstName, lastName, emailAddress, password: hashedPassword
+                }, (err, newUser) => {
+                    if (err) {
+                        return res.status(400).json({ status: 400, message: err });
+                    }
+                    res.status(201).json({ message: 'User registered successfully', user: newUser });
+                });
+            });
+        });
+    },
   getAllUsers: (req, res, next) => {
     database.getAll((err, users) => {
         if (err) {
