@@ -106,18 +106,63 @@ let controller = {
     });
 },
   deleteUser: (req, res, next) => {
-    const { userId } = req.params; 
-  
-    database.deleteUserById(userId, (err) => {
-      if (err) {
-        console.log('Error deleting user:', err);
-        return res.status(500).json({ status: 500, result: 'Internal server error' });
-      }
-      res.status(200).json({ 
-        status:200,
-        message: 'User deleted successfully' });
+    const { id } = req.params; 
+
+    database.delete(id, (err) => {
+        if (err) {
+            console.log('Error deleting user:', err);
+            return res.status(500).json({ status: 500, result: 'Internal server error' });
+        }
+        res.status(200).json({
+            status: 200,
+            message: 'User deleted successfully'
+        });
     });
-  }
+},
+  updateUser: (req, res, next) => {
+    const { id } = req.params;  
+    const { firstName, lastName, emailAddress, password } = req.body;
+
+    if (req.user.userId !== parseInt(id)) {
+        return res.status(403).json({
+            status: 403,
+            message: 'Unauthorized to update these details'
+        });
+    }
+
+    database.getById(id, (err, user) => {
+        if (err || !user) {
+          console.log("niet gevonden")
+            return res.status(404).json({
+                status: 404,
+                message: 'User not found'
+            });
+        }
+
+        bcrypt.genSalt(10, async (err, salt) => {
+            if (err) {
+                return res.status(500).json({ status: 500, message: 'Error generating salt' });
+            }
+
+            bcrypt.hash(password || user.password, salt, async (err, hashedPassword) => {
+                if (err) {
+                    return res.status(500).json({ status: 500, message: 'Error hashing password' });
+                }
+                user.firstName = firstName || user.firstName;
+                user.lastName = lastName || user.lastName;
+                user.emailAddress = emailAddress || user.emailAddress;
+                user.password = hashedPassword;
+
+                database.update(user, (err, updatedUser) => {
+                    if (err) {
+                        return res.status(400).json({ status: 400, message: err });
+                    }
+                    res.status(200).json({ message: 'User updated successfully', user: updatedUser });
+                });
+            });
+        });
+    });
+}
 };
 
 module.exports = controller;

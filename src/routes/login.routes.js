@@ -5,10 +5,14 @@ const { authenticateToken } = require('../middleware/auth');
 const database = require('../../db/database');
 router.use(express.json());
 
+router.get('/api/user', authenticateToken, loginController.getAllUsers)
+
 router.post('/api/user',loginController.validateUser, loginController.registerUser)
 router.post('/api/login', loginController.loginUser)
-router.get('/api/user', authenticateToken, loginController.getAllUsers)
-router.delete('/api/user/:id', loginController.deleteUser)
+
+router.delete('/api/user/:id',authenticateToken, loginController.deleteUser)
+
+router.put('/api/user/:id', authenticateToken, loginController.updateUser);
 
 router.get('/api/info', authenticateToken, (req, res, next) => {
     const userId = req.user.userId;  
@@ -21,9 +25,9 @@ router.get('/api/info', authenticateToken, (req, res, next) => {
             next(error)
         }
         res.json({
-            studentName: user.firstName + " " + user.lastName,
-            studentNumber: user.id, 
-            description: "Informatie over de ingelogde student"
+            Id: user.id, 
+            Name: user.firstName + " " + user.lastName,   
+            description: "This is your account"
         });
     });
 });
