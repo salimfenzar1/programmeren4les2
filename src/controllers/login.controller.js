@@ -5,30 +5,38 @@ const assert = require('assert')
 database.addTestUser()
 
 let controller = {
-  validateUser:(req,res,next) =>{
-    let user = req.body
-    let{firstName,lastName, emailAddress,password} = user
+  validateUser: (req, res, next) => {
+    let { firstName, lastName, emailAddress, password } = req.body;
+    
+    let missingFields = [];
+    if (!firstName) missingFields.push('First name');
+    if (!lastName) missingFields.push('Last name');
+    if (!emailAddress) missingFields.push('Email address');
+    if (!password) missingFields.push('Password');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        status: 400,
+        message: `Missing required fields: ${missingFields.join(', ')}`,
+        data: {}
+      });
+    }
+
     try {
-      if (!emailAddress || !password || !firstName || !lastName) {
-        return res.status(400).json({ 
-          status:400,
-          message: 'All fields are required',
-          data:{} });
-      }else{
-        assert(typeof firstName === 'string','first name must be a string')
-        assert(typeof lastName === 'string','last name must be a string')
-        assert(typeof emailAddress === 'string','email address must be a string')
-      }
-      next()
+      assert(typeof firstName === 'string', 'First name must be a string');
+      assert(typeof lastName === 'string', 'Last name must be a string');
+      assert(typeof emailAddress === 'string', 'Email address must be a string');
+      assert(typeof password === 'string', 'Password must be a string');
+
+      next(); 
     } catch (error) {
-      console.log(error)
-      const err ={
-        status:400,
+      console.log(error);
+      const err = {
+        status: 400,
         result: error.toString()
-      }
-      next(err)
-      }
-  
+      };
+      next(err); 
+    }
   },
     loginUser: async (req, res, next) => {
         const { emailAddress, password } = req.body;
