@@ -52,7 +52,7 @@ let controller = {
             console.log("Password comparison failed"); 
             const error ={
               status:401,
-              result: 'Authentication failed'
+              result: 'Authentication failed, log in with emailAddress and password',
             }
             next(error)
           }
