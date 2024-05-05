@@ -1,0 +1,16 @@
+# Node.js-omgeving
+node_modules/
+npm-debug.log
+yarn-error.log
+
+.vscode/
+.idea/
+*.swp
+
+.DS_Store
+Thumbs.db
+
+*.log
+
+test-output/
+coverage/

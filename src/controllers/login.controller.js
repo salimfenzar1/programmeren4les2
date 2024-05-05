@@ -5,30 +5,38 @@ const assert = require('assert')
 database.addTestUser()
 
 let controller = {
-  validateUser:(req,res,next) =>{
-    let user = req.body
-    let{firstName,lastName, emailAddress,password} = user
+  validateUser: (req, res, next) => {
+    let { firstName, lastName, emailAddress, password } = req.body;
+    
+    let missingFields = [];
+    if (!firstName) missingFields.push('First name');
+    if (!lastName) missingFields.push('Last name');
+    if (!emailAddress) missingFields.push('Email address');
+    if (!password) missingFields.push('Password');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        status: 400,
+        message: `Missing required fields: ${missingFields.join(', ')}`,
+        data: {}
+      });
+    }
+
     try {
-      if (!emailAddress || !password || !firstName || !lastName) {
-        return res.status(400).json({ 
-          status:400,
-          message: 'All fields are required',
-          data:{} });
-      }else{
-        assert(typeof firstName === 'string','first name must be a string')
-        assert(typeof lastName === 'string','last name must be a string')
-        assert(typeof emailAddress === 'string','email address must be a string')
-      }
-      next()
+      assert(typeof firstName === 'string', 'First name must be a string');
+      assert(typeof lastName === 'string', 'Last name must be a string');
+      assert(typeof emailAddress === 'string', 'Email address must be a string');
+      assert(typeof password === 'string', 'Password must be a string');
+
+      next(); 
     } catch (error) {
-      console.log(error)
-      const err ={
-        status:400,
+      console.log(error);
+      const err = {
+        status: 400,
         result: error.toString()
-      }
-      next(err)
-      }
-  
+      };
+      next(err); 
+    }
   },
     loginUser: async (req, res, next) => {
         const { emailAddress, password } = req.body;
@@ -106,18 +114,63 @@ let controller = {
     });
 },
   deleteUser: (req, res, next) => {
-    const { userId } = req.params; 
-  
-    database.deleteUserById(userId, (err) => {
-      if (err) {
-        console.log('Error deleting user:', err);
-        return res.status(500).json({ status: 500, result: 'Internal server error' });
-      }
-      res.status(200).json({ 
-        status:200,
-        message: 'User deleted successfully' });
+    const { id } = req.params; 
+
+    database.delete(id, (err) => {
+        if (err) {
+            console.log('Error deleting user:', err);
+            return res.status(500).json({ status: 500, result: 'Internal server error' });
+        }
+        res.status(200).json({
+            status: 200,
+            message: 'User deleted successfully'
+        });
     });
-  }
+},
+  updateUser: (req, res, next) => {
+    const { id } = req.params;  
+    const { firstName, lastName, emailAddress, password } = req.body;
+
+    if (req.user.userId !== parseInt(id)) {
+        return res.status(403).json({
+            status: 403,
+            message: 'Unauthorized to update these details'
+        });
+    }
+
+    database.getById(id, (err, user) => {
+        if (err || !user) {
+          console.log("niet gevonden")
+            return res.status(404).json({
+                status: 404,
+                message: 'User not found'
+            });
+        }
+
+        bcrypt.genSalt(10, async (err, salt) => {
+            if (err) {
+                return res.status(500).json({ status: 500, message: 'Error generating salt' });
+            }
+
+            bcrypt.hash(password || user.password, salt, async (err, hashedPassword) => {
+                if (err) {
+                    return res.status(500).json({ status: 500, message: 'Error hashing password' });
+                }
+                user.firstName = firstName || user.firstName;
+                user.lastName = lastName || user.lastName;
+                user.emailAddress = emailAddress || user.emailAddress;
+                user.password = hashedPassword;
+
+                database.update(user, (err, updatedUser) => {
+                    if (err) {
+                        return res.status(400).json({ status: 400, message: err });
+                    }
+                    res.status(200).json({ message: 'User updated successfully', user: updatedUser });
+                });
+            });
+        });
+    });
+}
 };
 
 module.exports = controller;

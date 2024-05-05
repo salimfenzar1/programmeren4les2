@@ -64,26 +64,35 @@ module.exports = {
 
   // Vind een gebruiker op basis van ID
   getById(id, callback) {
-    const user = users.find(u => u.id === id);
+    const intId = parseInt(id);  
+    const user = users.find(u => u.id === intId);
     if (user) {
-      callback(null, user);
+        callback(null, user);
     } else {
-      callback('User not found', null);
+        callback('User not found', null);
     }
-  },
+},
 
-  // Verwijder een gebruiker (optioneel, afhankelijk van je use-case)
   delete(id, callback) {
-    const index = users.findIndex(u => u.id === id);
+    const intId = parseInt(id);
+    const index = users.findIndex(u => u.id === intId);
     if (index !== -1) {
-      users.splice(index, 1);
-      callback(null, { message: 'User deleted successfully' });
+        users.splice(index, 1);
+        callback(null, { message: 'User deleted successfully' });
     } else {
-      callback('User not found', null);
+        callback('User not found', null);
     }
-  },
+},
+update(updatedUser, callback) {
+  const index = users.findIndex(u => u.id === updatedUser.id);
+  if (index !== -1) {
+      users[index] = {...users[index], ...updatedUser};
+      callback(null, users[index]);
+  } else {
+      callback('User not found', null);
+  }
+},
 
-  // Voor debug-doeleinden: toon alle gebruikers
   getAll(callback) {
     callback(null, users);
   },
