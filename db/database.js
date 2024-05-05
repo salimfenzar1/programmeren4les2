@@ -16,6 +16,10 @@ function add(user, callback) {
   users.push(newUser);
   callback(null, newUser);
 }
+function clearTestUsers() {
+  users = [];
+  userId = 1;
+}
 function addTestUser() {
   const testUser = {
     firstName: 'Salim',
@@ -96,5 +100,6 @@ update(updatedUser, callback) {
   getAll(callback) {
     callback(null, users);
   },
-  addTestUser
+  addTestUser,
+  clearTestUsers 
 };
