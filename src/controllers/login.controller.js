@@ -113,19 +113,28 @@ let controller = {
         });
     });
 },
-  deleteUser: (req, res, next) => {
-    const { id } = req.params; 
+deleteUser: (req, res, next) => {
+  const { id } = req.params;
 
-    database.delete(id, (err) => {
-        if (err) {
-            console.log('Error deleting user:', err);
-            return res.status(500).json({ status: 500, result: 'Internal server error' });
-        }
-        res.status(200).json({
-            status: 200,
-            message: 'User deleted successfully'
-        });
-    });
+  database.getById(id, (err, user) => {
+      if (err) {
+          if (err === 'User not found') {
+              return res.status(404).json({ status: 404, message: 'User not found' });
+          } else {
+              console.error('Database error:', err);
+              return res.status(500).json({ status: 500, message: 'Internal server error' });
+          }
+      }
+
+      database.delete(id, (err) => {
+          if (err) {
+              console.error('Error deleting user:', err);
+              return res.status(500).json({ status: 500, message: 'Internal server error' });
+          }
+
+          return res.status(200).json({ status: 200, message: 'User deleted successfully' });
+      });
+  });
 },
   updateUser: (req, res, next) => {
     const { id } = req.params;  
