@@ -8,7 +8,7 @@ const { authenticateToken } = require('./src/middleware/auth');
 app.use(express.json());
 
 app.get('/', (req, res) => {
-  res.json({ message: 'This is the homepage', users: 'For users go to /user', info: 'For info navigate to /info' });
+  res.json({ message: 'This is the homepage', users: 'For users go to /api/user', info: 'For info navigate to /info', Login: 'For existing users head to /api/login and login with your credentials' });
 });
 
 app.get('/info', (req, res) => {
