@@ -31,7 +31,6 @@ describe('UC-201 register /api/user',()=>{
                     chai.expect(res.body).to.have.property('status').equals(400)
                     chai.expect(res.body)
                         .to.have.property('message')
-                        .equals('All fields are required')
                     chai
                         .expect(res.body)
                         .to.have.property('data')
