@@ -3,6 +3,7 @@ const app = express();
 const port = process.env.PORT || 3000;
 const appname = 'Salim his app';
 const userRouter = require('./src/routes/user.routes');
+const mealRouter = require('./src/routes/meal.routes');
 const { authenticateToken } = require('./src/middleware/auth');
 
 app.use(express.json());
@@ -20,6 +21,7 @@ app.get('/info', (req, res) => {
 });
 
 app.use(userRouter);
+app.use(mealRouter);
 
 // Plaats deze handler vlak voor je foutafhandeling middleware
 app.all('*', (req, res, next) => {

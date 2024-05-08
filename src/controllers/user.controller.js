@@ -183,7 +183,7 @@ let controller = {
 
   updateUser: (req, res, next) => {
     const { id } = req.params;
-    const { firstName, lastName, emailAddress, password } = req.body;
+    const { firstName, lastName, emailAddress, password, street, city } = req.body;
 
     if (req.user.userId !== parseInt(id)) {
       return res.status(403).json({
@@ -192,11 +192,22 @@ let controller = {
       });
     }
 
+
     pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
       if (err || results.length === 0) {
         return res.status(404).json({
           status: 404,
           message: 'User not found'
+        });
+      }
+      
+      const fieldsToUpdate = [firstName, lastName, emailAddress, password, street, city];
+      const hasUpdate = fieldsToUpdate.some(field => field !== undefined);
+    
+      if (!hasUpdate) {
+        return res.status(400).json({
+          status: 400,
+          message: 'No fields provided for update'
         });
       }
 
@@ -216,12 +227,14 @@ let controller = {
             firstName: firstName || user.firstName,
             lastName: lastName || user.lastName,
             emailAdress: emailAddress || user.emailAdress,
-            password: hashedPassword
+            password: hashedPassword,
+            street: street || user.street,
+            city: city || user.city
           };
 
           pool.query(
-            'UPDATE user SET firstName = ?, lastName = ?, emailAdress = ?, password = ? WHERE id = ?',
-            [updatedUser.firstName, updatedUser.lastName, updatedUser.emailAdress, updatedUser.password, id],
+            'UPDATE user SET firstName = ?, lastName = ?, emailAdress = ?, password = ?, street = ? , city = ? WHERE id = ?',
+            [updatedUser.firstName, updatedUser.lastName, updatedUser.emailAdress, updatedUser.password, updatedUser.street, updatedUser.city, id],
             (err) => {
               if (err) {
                 return res.status(400).json({ status: 400, message: err });
