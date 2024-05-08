@@ -5,13 +5,15 @@ const assert = require('assert');
 
 let controller = {
   validateUser: (req, res, next) => {
-    let { firstName, lastName, emailAddress, password } = req.body;
+    let { firstName, lastName, emailAddress, password, street, city } = req.body;
 
     let missingFields = [];
     if (!firstName) missingFields.push('First name');
     if (!lastName) missingFields.push('Last name');
     if (!emailAddress) missingFields.push('Email address');
     if (!password) missingFields.push('Password');
+    if (!street) missingFields.push('Street');
+    if (!city) missingFields.push('City');
 
     if (missingFields.length > 0) {
       return res.status(400).json({
@@ -26,6 +28,8 @@ let controller = {
       assert(typeof lastName === 'string', 'Last name must be a string');
       assert(typeof emailAddress === 'string', 'Email address must be a string');
       assert(typeof password === 'string', 'Password must be een string');
+      assert(typeof street === 'string', 'Street must be een string');
+      assert(typeof city === 'string', 'City must be een string');
 
       next();
     } catch (error) {
@@ -69,23 +73,37 @@ let controller = {
     });
   },
 
-  registerUser: async (req, res, next) => {
-    // Haal street en city op vanuit het request
-    const { firstName, lastName, emailAddress, password, street, city } = req.body;
+  getUserById: (req, res, next) => {
+    const { id } = req.params; 
+  
+    pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
+      if (err || results.length === 0) {
+        return res.status(404).json({
+          status: 404,
+          message: 'User not found'
+        });
+      }
 
-    // Voeg bcrypt salt toe
+      res.status(200).json({
+        status: 200,
+        message: 'User retrieved successfully',
+        data: results
+      });
+    })
+  },
+
+  registerUser: async (req, res, next) => {
+    const { firstName, lastName, emailAddress, password, street, city } = req.body;
     bcrypt.genSalt(10, async (err, salt) => {
       if (err) {
         return res.status(500).json({ status: 500, message: 'Error generating salt' });
       }
 
-      // Hash het wachtwoord met bcrypt
       bcrypt.hash(password, salt, async (err, hashedPassword) => {
         if (err) {
           return res.status(500).json({ status: 500, message: 'Error hashing password' });
         }
 
-        // Voeg de gebruiker toe aan de database
         pool.query(
           'INSERT INTO user (firstName, lastName, emailAdress, password, street, city) VALUES (?, ?, ?, ?, ?, ?)',
           [firstName, lastName, emailAddress, hashedPassword, street, city],
@@ -93,7 +111,6 @@ let controller = {
             if (err) {
               return res.status(400).json({ status: 400, message: err });
             }
-            // Geef een succesmelding terug met de nieuwe gebruikersinformatie
             res.status(201).json({
               message: 'User registered successfully',
               user: { id: result.insertId, firstName, lastName, emailAddress, street, city }
@@ -122,6 +139,28 @@ let controller = {
       });
     });
   },
+  getUserProfile: (req, res, next) => {
+    const userId = req.user.userId; 
+
+    pool.query('SELECT * FROM user WHERE id = ?', [userId], (err, results) => {
+        if (err || results.length === 0) {
+            return next({
+                status: 404,
+                message: 'User not found'
+            });
+        }
+
+        const user = results[0];
+        
+        res.json({
+            Id: user.id,
+            Name: user.firstName + ' ' + user.lastName,
+            Email: user.emailAdress,
+            Address: user.city + ' ' + user.street,
+            Description: 'This is your account'
+        });
+    });
+},
 
   deleteUser: (req, res, next) => {
     const { id } = req.params;

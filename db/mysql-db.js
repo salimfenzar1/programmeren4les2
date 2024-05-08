@@ -32,26 +32,4 @@ pool.on('release', function (connection) {
     logger.trace('Connection %d released', connection.threadId);
 });
 
-const queryString = 'SELECT * FROM `user` WHERE `firstName` = ? AND `id` > ?';
-const name = 'Herman';
-const isActive = 1;
-
-pool.getConnection(function (err, connection) {
-    if (err) {
-        logger.error(err);
-        return 1;
-    }
-
-    connection.query(queryString, [name, isActive], function (error, results, fields) {
-        connection.release();
-        if (error) {
-            logger.error(error);
-            return 1;
-        }
-
-        logger.debug('#results = ', results.length);
-        logger.debug({ statusCode: 200, results: results });
-    });
-});
-
 module.exports = pool;
