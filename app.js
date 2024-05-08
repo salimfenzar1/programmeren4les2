@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const port = process.env.PORT || 3000;
 const appname = 'Salim his app';
-const loginRouter = require('./src/routes/login.routes');
+const userRouter = require('./src/routes/user.routes');
 const { authenticateToken } = require('./src/middleware/auth');
 
 app.use(express.json());
@@ -19,7 +19,7 @@ app.get('/info', (req, res) => {
   res.json(info);
 });
 
-app.use(loginRouter);
+app.use(userRouter);
 
 // Plaats deze handler vlak voor je foutafhandeling middleware
 app.all('*', (req, res, next) => {
@@ -34,7 +34,7 @@ app.use((error, req, res, next) => {
   res.status(error.status || 500).json({
       status: error.status || 500,
       message: error.message || 'Internal Server Error',
-      data: {}
+      data: 'pope'
   });
 });
 
