@@ -1,13 +1,12 @@
 const bcrypt = require('bcryptjs');
-const jwt = require('jsonwebtoken'); 
-const database = require('../../db/database');
-const assert = require('assert')
-database.addTestUser()
+const jwt = require('jsonwebtoken');
+const pool = require('../../db/mysql-db');
+const assert = require('assert');
 
 let controller = {
   validateUser: (req, res, next) => {
     let { firstName, lastName, emailAddress, password } = req.body;
-    
+
     let missingFields = [];
     if (!firstName) missingFields.push('First name');
     if (!lastName) missingFields.push('Last name');
@@ -26,160 +25,175 @@ let controller = {
       assert(typeof firstName === 'string', 'First name must be a string');
       assert(typeof lastName === 'string', 'Last name must be a string');
       assert(typeof emailAddress === 'string', 'Email address must be a string');
-      assert(typeof password === 'string', 'Password must be a string');
+      assert(typeof password === 'string', 'Password must be een string');
 
-      next(); 
+      next();
     } catch (error) {
       console.log(error);
       const err = {
         status: 400,
         result: error.toString()
       };
-      next(err); 
+      next(err);
     }
   },
-    loginUser: async (req, res, next) => {
-        const { emailAddress, password } = req.body;
-        console.log("Logging in with:", emailAddress, password); 
-        database.findByEmail(emailAddress, async (err, user) => {
-          if (err || !user) {
-            console.log("User not found or error:", err); 
-            return res.status(401).json({ error: 'Authentication failed' });
-          }
-    
-          console.log("User found, comparing password for user:", user); 
-          if (await bcrypt.compare(password, user.password)) {
-            const token = jwt.sign(
-              { userId: user.id, email: user.emailAddress },
-              'your_jwt_secret',
-              { expiresIn: '1h' }
-            );
-    
-            res.json({ message: 'Login successful', token, user });
-          } else {
-            console.log("Password comparison failed"); 
-            const error ={
-              status:401,
-              result: 'Authentication failed, log in with emailAddress and password',
-            }
-            next(error)
-          }
-        });
-      },
 
+  loginUser: async (req, res, next) => {
+    const { emailAddress, password } = req.body;
+    console.log("Logging in with:", emailAddress, password);
 
-      registerUser: async (req, res, next) => {
-        const { firstName, lastName, emailAddress, password } = req.body;
-    
-        bcrypt.genSalt(10, async (err, salt) => {
-            if (err) {
-                return res.status(500).json({ status: 500, message: 'Error generating salt' });
-            }
-    
-            bcrypt.hash(password, salt, async (err, hashedPassword) => {
-                if (err) {
-                    return res.status(500).json({ status: 500, message: 'Error hashing password' });
-                }
-    
-                database.add({
-                    firstName, lastName, emailAddress, password: hashedPassword
-                }, (err, newUser) => {
-                    if (err) {
-                        return res.status(400).json({ status: 400, message: err });
-                    }
-                    res.status(201).json({ message: 'User registered successfully', user: newUser });
-                });
-            });
-        });
-    },
-  getAllUsers: (req, res, next) => {
-    database.getAll((err, users) => {
-        if (err) {
-            console.log('Error retrieving users:', err);
-            return res.status(500).json({
-                status: 500,
-                message: 'Internal server error while fetching users'
-            });
-        }
-
-        if (!users) {
-            users = []; 
-        }
-
-        res.status(200).json({
-            status: 200,
-            message: 'Users retrieved successfully',
-            data: users
-        });
-    });
-},
-deleteUser: (req, res, next) => {
-  const { id } = req.params;
-
-  database.getById(id, (err, user) => {
-      if (err) {
-          if (err === 'User not found') {
-              return res.status(404).json({ status: 404, message: 'User not found' });
-          } else {
-              console.error('Database error:', err);
-              return res.status(500).json({ status: 500, message: 'Internal server error' });
-          }
+    pool.query('SELECT * FROM user WHERE emailAdress = ?', [emailAddress], async (err, results) => {
+      if (err || results.length === 0) {
+        console.log("User not found or error:", err);
+        return res.status(401).json({ error: 'Authentication failed' });
       }
 
-      database.delete(id, (err) => {
-          if (err) {
-              console.error('Error deleting user:', err);
-              return res.status(500).json({ status: 500, message: 'Internal server error' });
-          }
+      const user = results[0];
+      console.log("User found, comparing password for user:", user);
+      if (await bcrypt.compare(password, user.password)) {
+        const token = jwt.sign(
+          { userId: user.id, email: user.emailAdress },
+          'your_jwt_secret',
+          { expiresIn: '1h' }
+        );
 
-          return res.status(200).json({ status: 200, message: 'User deleted successfully' });
+        res.json({ message: 'Login successful', token, user });
+      } else {
+        console.log("Password comparison failed");
+        const error = {
+          status: 401,
+          result: 'Authentication failed, log in with emailAddress and password',
+        };
+        next(error);
+      }
+    });
+  },
+
+  registerUser: async (req, res, next) => {
+    // Haal street en city op vanuit het request
+    const { firstName, lastName, emailAddress, password, street, city } = req.body;
+
+    // Voeg bcrypt salt toe
+    bcrypt.genSalt(10, async (err, salt) => {
+      if (err) {
+        return res.status(500).json({ status: 500, message: 'Error generating salt' });
+      }
+
+      // Hash het wachtwoord met bcrypt
+      bcrypt.hash(password, salt, async (err, hashedPassword) => {
+        if (err) {
+          return res.status(500).json({ status: 500, message: 'Error hashing password' });
+        }
+
+        // Voeg de gebruiker toe aan de database
+        pool.query(
+          'INSERT INTO user (firstName, lastName, emailAdress, password, street, city) VALUES (?, ?, ?, ?, ?, ?)',
+          [firstName, lastName, emailAddress, hashedPassword, street, city],
+          (err, result) => {
+            if (err) {
+              return res.status(400).json({ status: 400, message: err });
+            }
+            // Geef een succesmelding terug met de nieuwe gebruikersinformatie
+            res.status(201).json({
+              message: 'User registered successfully',
+              user: { id: result.insertId, firstName, lastName, emailAddress, street, city }
+            });
+          }
+        );
+      })
+    })
+  },
+
+
+  getAllUsers: (req, res, next) => {
+    pool.query('SELECT * FROM user', (err, results) => {
+      if (err) {
+        console.log('Error retrieving users:', err);
+        return res.status(500).json({
+          status: 500,
+          message: 'Internal server error while fetching users'
+        });
+      }
+
+      res.status(200).json({
+        status: 200,
+        message: 'Users retrieved successfully',
+        data: results
       });
-  });
-},
+    });
+  },
+
+  deleteUser: (req, res, next) => {
+    const { id } = req.params;
+
+    pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
+      if (err || results.length === 0) {
+        return res.status(404).json({ status: 404, message: 'User not found' });
+      }
+
+      pool.query('DELETE FROM user WHERE id = ?', [id], (err) => {
+        if (err) {
+          console.error('Error deleting user:', err);
+          return res.status(500).json({ status: 500, message: 'Internal server error' });
+        }
+
+        return res.status(200).json({ status: 200, message: 'User deleted successfully' });
+      });
+    });
+  },
+
   updateUser: (req, res, next) => {
-    const { id } = req.params;  
+    const { id } = req.params;
     const { firstName, lastName, emailAddress, password } = req.body;
 
     if (req.user.userId !== parseInt(id)) {
-        return res.status(403).json({
-            status: 403,
-            message: 'Unauthorized to update these details'
-        });
+      return res.status(403).json({
+        status: 403,
+        message: 'Unauthorized to update these details'
+      });
     }
 
-    database.getById(id, (err, user) => {
-        if (err || !user) {
-          console.log("niet gevonden")
-            return res.status(404).json({
-                status: 404,
-                message: 'User not found'
-            });
+    pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
+      if (err || results.length === 0) {
+        return res.status(404).json({
+          status: 404,
+          message: 'User not found'
+        });
+      }
+
+      const user = results[0];
+
+      bcrypt.genSalt(10, async (err, salt) => {
+        if (err) {
+          return res.status(500).json({ status: 500, message: 'Error generating salt' });
         }
 
-        bcrypt.genSalt(10, async (err, salt) => {
-            if (err) {
-                return res.status(500).json({ status: 500, message: 'Error generating salt' });
+        bcrypt.hash(password || user.password, salt, async (err, hashedPassword) => {
+          if (err) {
+            return res.status(500).json({ status: 500, message: 'Error hashing password' });
+          }
+
+          const updatedUser = {
+            firstName: firstName || user.firstName,
+            lastName: lastName || user.lastName,
+            emailAdress: emailAddress || user.emailAdress,
+            password: hashedPassword
+          };
+
+          pool.query(
+            'UPDATE user SET firstName = ?, lastName = ?, emailAdress = ?, password = ? WHERE id = ?',
+            [updatedUser.firstName, updatedUser.lastName, updatedUser.emailAdress, updatedUser.password, id],
+            (err) => {
+              if (err) {
+                return res.status(400).json({ status: 400, message: err });
+              }
+              res.status(200).json({ message: 'User updated successfully', user: updatedUser });
             }
-
-            bcrypt.hash(password || user.password, salt, async (err, hashedPassword) => {
-                if (err) {
-                    return res.status(500).json({ status: 500, message: 'Error hashing password' });
-                }
-                user.firstName = firstName || user.firstName;
-                user.lastName = lastName || user.lastName;
-                user.emailAddress = emailAddress || user.emailAddress;
-                user.password = hashedPassword;
-
-                database.update(user, (err, updatedUser) => {
-                    if (err) {
-                        return res.status(400).json({ status: 400, message: err });
-                    }
-                    res.status(200).json({ message: 'User updated successfully', user: updatedUser });
-                });
-            });
+          );
         });
+      });
     });
-}
+  }
 };
 
 module.exports = controller;

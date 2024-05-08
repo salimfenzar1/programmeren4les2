@@ -7,6 +7,7 @@ router.use(express.json());
 
 router.get('/api/user', authenticateToken, loginController.getAllUsers)
 
+
 router.post('/api/user',loginController.validateUser, loginController.registerUser)
 router.post('/api/login', loginController.loginUser)
 

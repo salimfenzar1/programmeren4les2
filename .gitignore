@@ -1,16 +1,27 @@
-# Node.js-omgeving
-node_modules/
-npm-debug.log
-yarn-error.log
-
-.vscode/
-.idea/
-*.swp
-
-.DS_Store
-Thumbs.db
-
+# Ignore build output directories
+/bin/
+/build/
+/out/
+ 
+# Ignore package manager directories
+/node_modules/
+/packages/
+ 
+# Ignore log files
 *.log
-
-test-output/
-coverage/
+ 
+# Ignore user-specific files
+/.env
+/.env.local
+/.env.*.local
+.env.development.local
+.env.test.local
+.env.production.local
+ 
+# Ignore sensitive or private information
+secrets.txt
+credentials.json
+*.PublishSettings
+ 
+# Ignore the entire test directory
+/test/
