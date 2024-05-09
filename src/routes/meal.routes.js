@@ -7,10 +7,12 @@ router.use(express.json());
 
 router.post('/api/meal', authenticateToken, mealController.addMeal);
 
-router.get('/api/meal', authenticateToken, mealController.getAllMeals);
+router.get('/api/meal', mealController.getAllMeals);
+
+router.get('/api/meal/:id', mealController.getMealById);
 
 router.put('/api/meal/:id', authenticateToken, mealController.updateMeal);
 
-// router.delete('/api/meal/:id',authenticateToken, userController.deleteUser)
+router.delete('/api/meal/:id',authenticateToken, mealController.deleteMeal)
 
 module.exports = router
