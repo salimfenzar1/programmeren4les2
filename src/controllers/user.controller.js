@@ -44,38 +44,50 @@ let controller = {
 
   loginUser: async (req, res, next) => {
     const { emailAddress, password } = req.body;
-
-
+  
     if (!emailAddress || !password) {
       return res.status(400).json({
         status: 400,
-        message: 'Missing required fields: emailAddress and/or password'
+        message: 'Missing required fields: emailAddress and/or password',
+        data: {}
       });
     }
-
+  
     pool.query('SELECT * FROM user WHERE emailAdress = ?', [emailAddress], async (err, results) => {
-      if (err || results.length === 0) {
-        console.log("User not found or error:", err);
-        return res.status(401).json({ error: 'Authentication failed' });
+      if (err) {
+        console.log("Database error:", err);
+        return res.status(500).json({status: 500, message: 'Database error',data: {} });
       }
-
+      
+      if (results.length === 0) {
+        console.log("User not found");
+        return res.status(404).json({status:404, message: 'User not found', data: {} });
+      }
+  
       const user = results[0];
       console.log("User found, comparing password for user:", user);
-      if (await bcrypt.compare(password, user.password)) {
+ 
+      const isHashed = user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$');
+  
+      let passwordMatch = false;
+  
+      if (isHashed) {
+        passwordMatch = await bcrypt.compare(password, user.password);
+      } else {
+        passwordMatch = password === user.password;
+      }
+  
+      if (passwordMatch) {
         const token = jwt.sign(
           { userId: user.id, email: user.emailAdress },
           'your_jwt_secret',
           { expiresIn: '1h' }
         );
-
+  
         res.json({ message: 'Login successful', token, user });
       } else {
         console.log("Password comparison failed");
-        const error = {
-          status: 401,
-          result: 'Authentication failed, log in with emailAddress and password',
-        };
-        next(error);
+        return res.status(401).json({ status: 401, message: 'Authentication failed', data:{} });
       }
     });
   },
@@ -101,16 +113,23 @@ let controller = {
 
   registerUser: async (req, res, next) => {
     const { firstName, lastName, emailAddress, password, street, city } = req.body;
+
+    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
+  
+    if (!emailRegex.test(emailAddress)) {
+      return res.status(400).json({ status: 400, message: 'Invalid email address' , data: {} });
+    }
+  
     bcrypt.genSalt(10, async (err, salt) => {
       if (err) {
         return res.status(500).json({ status: 500, message: 'Error generating salt' });
       }
-
+  
       bcrypt.hash(password, salt, async (err, hashedPassword) => {
         if (err) {
           return res.status(500).json({ status: 500, message: 'Error hashing password' });
         }
-
+  
         pool.query(
           'INSERT INTO user (firstName, lastName, emailAdress, password, street, city) VALUES (?, ?, ?, ?, ?, ?)',
           [firstName, lastName, emailAddress, hashedPassword, street, city],
@@ -174,7 +193,7 @@ let controller = {
 
     pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
       if (err || results.length === 0) {
-        return res.status(404).json({ status: 404, message: 'User not found' });
+        return res.status(404).json({ status: 404, message: 'User not found', data:{} });
       }
 
       pool.query('DELETE FROM user WHERE id = ?', [id], (err) => {

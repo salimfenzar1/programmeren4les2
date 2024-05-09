@@ -1,8 +1,6 @@
 const mysql = require('mysql2')
-const logger = require('../util/logger')
+const logger = require('../src/util/logger')
 const dotenv = require('dotenv');
-
-
 
 const dbConfig = {
     host: process.env.DB_HOST,
