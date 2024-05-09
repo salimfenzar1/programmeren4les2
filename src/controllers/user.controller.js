@@ -44,7 +44,14 @@ let controller = {
 
   loginUser: async (req, res, next) => {
     const { emailAddress, password } = req.body;
-    console.log("Logging in with:", emailAddress, password);
+
+
+    if (!emailAddress || !password) {
+      return res.status(400).json({
+        status: 400,
+        message: 'Missing required fields: emailAddress and/or password'
+      });
+    }
 
     pool.query('SELECT * FROM user WHERE emailAdress = ?', [emailAddress], async (err, results) => {
       if (err || results.length === 0) {
@@ -200,7 +207,7 @@ let controller = {
           message: 'User not found'
         });
       }
-      
+
       const fieldsToUpdate = [firstName, lastName, emailAddress, password, street, city];
       const hasUpdate = fieldsToUpdate.some(field => field !== undefined);
     
