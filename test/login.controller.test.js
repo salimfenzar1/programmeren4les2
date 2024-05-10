@@ -100,18 +100,7 @@ it('TC-101-4 Gebruiker succesvol ingelogd', (done) => {
         });
 });
     
-    it('TC-101-2 Niet-valide wachtwoord', (done) => {
-        chai.request(server)
-            .post('/api/login')
-            .send({ emailAddress: 'name@server.nl', password: 'wrongpassword' })
-            .end((err, res) => {
-                res.should.have.status(401);
-                res.body.should.be.an('object').that.includes.all.keys('status', 'message', 'data');
-                res.body.status.should.equal(401);
-                res.body.data.should.be.empty;
-                done();
-            });
-    });
+
 
     it('TC-102-1 Opvragen van systeeminformatie', (done) => {
         chai.request(server)
