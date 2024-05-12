@@ -149,22 +149,55 @@ let controller = {
 
 
   getAllUsers: (req, res, next) => {
-    pool.query('SELECT * FROM user', (err, results) => {
-      if (err) {
-        console.log('Error retrieving users:', err);
-        return res.status(500).json({
-          status: 500,
-          message: 'Internal server error while fetching users'
-        });
-      }
+    const allowedFilters = ['id', 'firstName', 'lastName', 'isActive', 'emailAdress', 'phoneNumber', 'roles', 'street', 'city'];
 
-      res.status(200).json({
-        status: 200,
-        message: 'Users retrieved successfully',
-        data: results
-      });
+    let query = 'SELECT * FROM user';
+    let queryParams = [];
+
+    let filters = [];
+
+    const queryKeys = Object.keys(req.query);
+    const invalidFilters = queryKeys.filter(key => !allowedFilters.includes(key));
+
+    if (invalidFilters.length > 0) {
+        return res.status(400).json({
+            status: 400,
+            message: `Invalid filter(s): ${invalidFilters.join(', ')}`,
+            data: {}
+        });
+    }
+
+
+    allowedFilters.forEach(filter => {
+        if (req.query[filter]) {
+            filters.push(`${filter} = ?`);
+            queryParams.push(req.query[filter]);
+        }
     });
-  },
+
+    if (filters.length > 0) {
+        query += ' WHERE ' + filters.join(' AND ');
+    }
+
+    console.log('Executing query:', query);
+    console.log('With parameters:', queryParams);
+
+    pool.query(query, queryParams, (err, results) => {
+        if (err) {
+            console.log('Error retrieving users:', err);
+            return res.status(500).json({
+                status: 500,
+                message: 'Internal server error while fetching users'
+            });
+        }
+
+        res.status(200).json({
+            status: 200,
+            message: 'Users retrieved successfully',
+            data: results
+        });
+    });
+},
   getUserProfile: (req, res, next) => {
     const userId = req.user.userId; 
 
