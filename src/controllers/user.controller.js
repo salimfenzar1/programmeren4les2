@@ -112,14 +112,37 @@ let controller = {
   },
 
   registerUser: async (req, res, next) => {
-    const { firstName, lastName, emailAddress, password, street, city } = req.body;
+    const { firstName, lastName, emailAddress, password, street, city, phoneNumber } = req.body;
 
     const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  
+    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
+    const phoneRegex = /^06[-\s]?[0-9]{8}$/;
+
     if (!emailRegex.test(emailAddress)) {
-      return res.status(400).json({ status: 400, message: 'Invalid email address' , data: {} });
+      return res.status(400).json({ status: 400, message: 'Invalid email address', data: {} });
     }
-  
+
+    if (!passwordRegex.test(password)) {
+      return res.status(400).json({ status: 400, message: 'Invalid password', data:{} });
+    }
+    
+    if (!phoneRegex.test(phoneNumber)) {
+      return res.status(400).json({ status: 400, message: 'Invalid phone number. Phone number must be 10 digits and start with 06', data:{} });
+    }
+    const existingUser = await new Promise((resolve, reject) => {
+      pool.query('SELECT id FROM user WHERE emailAdress = ?', [emailAddress], (err, results) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(results.length > 0 ? results[0] : null);
+        }
+      });
+    });
+
+    if (existingUser) {
+      return res.status(403).json({ status: 403, message: 'User already exists', data: {} });
+    }
+
     bcrypt.genSalt(10, async (err, salt) => {
       if (err) {
         return res.status(500).json({ status: 500, message: 'Error generating salt' });
@@ -131,15 +154,15 @@ let controller = {
         }
   
         pool.query(
-          'INSERT INTO user (firstName, lastName, emailAdress, password, street, city) VALUES (?, ?, ?, ?, ?, ?)',
-          [firstName, lastName, emailAddress, hashedPassword, street, city],
+          'INSERT INTO user (firstName, lastName, emailAdress, password, street, city, phoneNumber) VALUES (?, ?, ?, ?, ?, ?,?)',
+          [firstName, lastName, emailAddress, hashedPassword, street, city, phoneNumber],
           (err, result) => {
             if (err) {
-              return res.status(400).json({ status: 400, message: err });
+              return res.status(400).json({ status: 400, message: err ,data:{}});
             }
             res.status(201).json({
               message: 'User registered successfully',
-              user: { id: result.insertId, firstName, lastName, emailAddress, street, city }
+              user: { id: result.insertId, firstName, lastName, emailAddress, street, city, phoneNumber }
             });
           }
         );

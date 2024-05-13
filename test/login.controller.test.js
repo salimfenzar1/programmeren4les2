@@ -87,7 +87,7 @@ it('TC-101-3 Gebruiker bestaat niet', (done) => {
         });
 });
 
-
+// TC-101-4 Gebruiker succesvol ingelogd
 it('TC-101-4 Gebruiker succesvol ingelogd', (done) => {
     chai.request(server)
         .post('/api/login')
@@ -101,7 +101,7 @@ it('TC-101-4 Gebruiker succesvol ingelogd', (done) => {
 });
     
 
-
+// TC-102-1  Opvragen van systeeminformatie
     it('TC-102-1 Opvragen van systeeminformatie', (done) => {
         chai.request(server)
             .get('/api/info')
@@ -111,29 +111,31 @@ it('TC-101-4 Gebruiker succesvol ingelogd', (done) => {
                 done();
             });
     });
-
-    // UC-201 Registreren als nieuwe user
-    it('TC-201-1 Registreren als nieuwe user', (done) => {
+      // UC-201 TC-201-1 Verplicht veld ontbreekt
+      it('TC-201-1 Verplicht veld ontbreekt', (done) => {
         chai.request(server)
             .post('/api/user')
             .send({
-                firstName: 'John',
+                // firstName: 'John',
                 lastName: 'Doe',
-                emailAddress: 'johndoe@server.nl',
+                emailAddress: 'invalid-email',
                 password: 'ValidPass123',
                 street: 'Main Street',
-                city: 'Sample City'
+                city: 'Sample City',
+                phoneNumber: '0648746746'
             })
             .end((err, res) => {
-                res.should.have.status(201);
-                res.body.should.have.property('user').that.includes.all.keys('id', 'firstName', 'lastName', 'emailAddress', 'street', 'city');
+                res.should.have.status(400);
+                res.body.should.be.an('object').that.includes.all.keys('status', 'message', 'data');
+                res.body.status.should.equal(400);
+                res.body.message.should.equal('Missing required fields: First name');
+                res.body.data.should.be.empty;
                 done();
             });
     });
 
-
-    // UC-201 TC-201-2 Niet-valide emailadres
-    it('TC-201-2 Niet-valide emailadres', (done) => {
+      // UC-201 TC-201-2 Niet-valide emailadres
+      it('TC-201-2 Niet-valide emailadres', (done) => {
         chai.request(server)
             .post('/api/user')
             .send({
@@ -142,16 +144,88 @@ it('TC-101-4 Gebruiker succesvol ingelogd', (done) => {
                 emailAddress: 'invalid-email',
                 password: 'ValidPass123',
                 street: 'Main Street',
-                city: 'Sample City'
+                city: 'Sample City',
+                phoneNumber: '0648746746'
             })
             .end((err, res) => {
                 res.should.have.status(400);
                 res.body.should.be.an('object').that.includes.all.keys('status', 'message', 'data');
                 res.body.status.should.equal(400);
+                res.body.message.should.equal('Invalid email address');
                 res.body.data.should.be.empty;
                 done();
             });
     });
+
+      // UC-201 TC-201-3 Niet-valide wachtwoord
+      it('TC-201-3 Niet-valide wachtwoord', (done) => {
+        chai.request(server)
+            .post('/api/user')
+            .send({
+                firstName: 'John',
+                lastName: 'Doe',
+                emailAddress: 'johndoe@gmail.nl',
+                password: 'nvalid',
+                street: 'Main Street',
+                city: 'Sample City',
+                phoneNumber: '0648746746'
+            })
+            .end((err, res) => {
+                res.should.have.status(400);
+                res.body.should.be.an('object').that.includes.all.keys('status', 'message', 'data');
+                res.body.status.should.equal(400);
+                res.body.message.should.equal('Invalid password');
+                res.body.data.should.be.empty;
+                done();
+            });
+    });
+
+      // UC-201 TC-201-4 Gebruiker bestaat al
+      it('TC-201-4 Gebruiker bestaat al', (done) => {
+        chai.request(server)
+            .post('/api/user')
+            .send({
+                firstName: 'John',
+                lastName: 'Doe',
+                emailAddress: 'name@server.nl',
+                password: 'ValidPass123',
+                street: 'Main Street',
+                city: 'Sample City',
+                phoneNumber: '0648746746'
+            })
+            .end((err, res) => {
+                res.should.have.status(403);
+                res.body.should.be.an('object').that.includes.all.keys('status', 'message', 'data');
+                res.body.status.should.equal(403);
+                res.body.message.should.equal('User already exists');
+                res.body.data.should.be.empty;
+                done();
+            });
+    });
+
+    // UC-201-5 Registreren als nieuwe user
+    it('TC-201-5 Gebruiker succesvol geregistreerd', (done) => {
+        chai.request(server)
+            .post('/api/user')
+            .send({
+                firstName: 'John',
+                lastName: 'Doe',
+                emailAddress : 'johndoe@server.nl',
+                password: 'ValidPass123',
+                street: 'Main Street',
+                city: 'Sample City',
+                phoneNumber: '0648640646'
+            })
+            .end((err, res) => {
+                console.log(err)
+                res.should.have.status(201);
+                res.body.should.have.property('user').that.includes.all.keys('id', 'firstName', 'lastName', 'emailAddress', 'street', 'city','phoneNumber');
+                done();
+            });
+    });
+
+
+  
         // UC-202 Opvragen van overzicht van users
         it('TC-202-1 Opvragen van overzicht van users', (done) => {
             chai.request(server)
@@ -179,4 +253,16 @@ it('TC-101-4 Gebruiker succesvol ingelogd', (done) => {
                 done();
             });
     });
+    after((done) => {
+        db.getConnection((err, connection) => {
+            if (err) throw err;
+            connection.query(CLEAR_DB, (error, results, fields) => {
+                connection.release();
+                if (error) throw error;
+                done();
+            });
+        });
+    });
 });
+    
+
