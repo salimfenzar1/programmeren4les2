@@ -1,6 +1,6 @@
 # Salim's Server Applicatie
 
-Welkom bij de serverapplicatie van Salim. Deze applicatie is bedoeld om [kort beschrijven van het doel of de functionaliteit van de applicatie].
+Welkom bij de serverapplicatie van Salim. 
 
 ## Installatie
 
