@@ -553,16 +553,16 @@ it('TC-101-4 Gebruiker succesvol ingelogd', (done) => {
                     });
 
 
-    after((done) => {
-        db.getConnection((err, connection) => {
-            if (err) throw err;
-            connection.query(CLEAR_DB, (error, results, fields) => {
-                connection.release();
-                if (error) throw error;
-                done();
-            });
-        });
-    });
+    // after((done) => {
+    //     db.getConnection((err, connection) => {
+    //         if (err) throw err;
+    //         connection.query(CLEAR_DB, (error, results, fields) => {
+    //             connection.release();
+    //             if (error) throw error;
+    //             done();
+    //         });
+    //     });
+    // });
 });
     
 

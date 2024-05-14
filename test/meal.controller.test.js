@@ -31,7 +31,9 @@ const INSERT_USER = 'INSERT INTO `user` (`id`, `firstName`, `lastName`, `emailAd
 
 const INSERT_MEALS = 'INSERT INTO `meal` (`id`, `name`, `description`, `imageUrl`, `dateTime`, `maxAmountOfParticipants`, `price`, `cookId`) VALUES' +
     "(1, 'Meal A', 'description', 'image url', NOW(), 5, 6.50, 1)," +
-    "(2, 'Meal B', 'description', 'image url', NOW(), 5, 6.50, 2);";
+    "(2, 'Meal B', 'description', 'image url', NOW(), 5, 6.50, 2)," +
+    "(3, 'Meal c', 'description', 'image url', NOW(), 1, 6.50, 2);";
+    
 
 // Test Setup
 describe('UC-300 to UC-305 Testsuite', () => {
@@ -338,6 +340,127 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
                             done();
                         });
                 });
+
+                //UC-401 Aanmelden voor maaltijd  
+                // TC-401-1 Niet ingelogd
+                 it('TC-401-1 Niet ingelogd', (done) => {
+                    chai.request(server)
+                        .post('/api/meal/1/participate')
+                        // .set('Authorization', 'Bearer ' + authToken)
+                        .end((err, res) => {
+                            res.should.have.status(401);
+                            res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                            res.body.message.should.equal('No token provided');
+                            done();
+                        });
+                });
+
+                // TC-401-2 Maaltijd bestaat niet
+                it('TC-401-2 Maaltijd bestaat niet', (done) => {
+                    chai.request(server)
+                        .post('/api/meal/10/participate')
+                        .set('Authorization', 'Bearer ' + authToken)
+                        .end((err, res) => {
+                            res.should.have.status(404);
+                            res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                            res.body.message.should.equal('Meal not found');
+                            done();
+                        });
+                });
+
+                  // TC-401-3 Succesvol aangemeld
+                  it('TC-401-3 Succesvol aangemeld', (done) => {
+                    chai.request(server)
+                        .post('/api/meal/1/participate')
+                        .set('Authorization', 'Bearer ' + authToken)
+                        .end((err, res) => {
+                            res.should.have.status(200);
+                            res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                            res.body.message.should.equal('User with ID 1 is registered for meal with ID 1');
+                            done();
+                        });
+                });
+
+                 // TC-401-4 Maximumaantal aanmeldingen is bereikt.
+                it('TC-401-4 Maximumaantal aanmeldingen is bereikt.', (done) => {
+                    chai.request(server)
+                        .post('/api/meal/3/participate')
+                        .set('Authorization', 'Bearer ' + authToken)
+                        .end((addErr, addRes) => {
+                            chai.request(server)
+                                .post('/api/meal/3/participate')
+                                .set('Authorization', 'Bearer ' + authToken)
+                                .end((err, res) => {
+                                    res.should.have.status(400); 
+                                    res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                    res.body.message.should.equal('Maximum number of participants reached');
+                                    done();
+                                });
+                        });
+                });
+
+                  //UC-402 Afmelden voor maaltijd
+                  // TC-402-1 Niet ingelogd
+                  it('TC-402-1 Niet ingelogd', (done) => {
+                    chai.request(server)
+                        .delete('/api/meal/1/participate')
+                        // .set('Authorization', 'Bearer ' + authToken)
+                        .end((err, res) => {
+                            res.should.have.status(401);
+                            res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                            res.body.message.should.equal('No token provided');
+                            done();
+                        });
+                });
+
+                    // TC-402-2 Maaltijd bestaat niet
+                    it('TC-402-2 Maaltijd bestaat niet', (done) => {
+                        chai.request(server)
+                            .delete('/api/meal/10/participate')
+                            .set('Authorization', 'Bearer ' + authToken)
+                            .end((err, res) => {
+                                res.should.have.status(404);
+                                res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                res.body.message.should.equal('Meal not found');
+                                done();
+                            });
+                    });
+
+                      // TC-402-3 Aanmelding bestaat niet
+                      it('TC-402-3 Aanmelding bestaat niet', (done) => {
+                        chai.request(server)
+                            .delete('/api/meal/3/participate')
+                            .set('Authorization', 'Bearer ' + authToken)
+                            .end((err, res) => {
+                                res.should.have.status(404);
+                                res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                res.body.message.should.equal('User not registered for this meal');
+                                done();
+                            });
+                    });
+
+                    //TC-402-4 Succesvol afgemeld
+                    it('Gebruiker eerst succesvol aanmelden en dan afmelden', (done) => {
+                        chai.request(server)
+                            .post('/api/meal/3/participate')
+                            .set('Authorization', 'Bearer ' + authToken)
+                            .end((err, res) => {
+                                res.should.have.status(200);
+                                res.body.message.should.equal('User with ID 1 is registered for meal with ID 3');
+                    
+                                //TC-402-4 Succesvol afgemeld
+                                chai.request(server)
+                                    .delete('/api/meal/3/participate')
+                                    .set('Authorization', 'Bearer ' + authToken)
+                                    .end((err, res) => {
+                                        res.should.have.status(200);
+                                        res.body.message.should.equal('User with ID 1 has been successfully unregistered from meal with ID 3');
+                                        done();
+                                    });
+                            });
+                    });
+
+
 
 
     after((done) => {
