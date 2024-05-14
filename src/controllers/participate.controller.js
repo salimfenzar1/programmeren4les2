@@ -98,7 +98,7 @@ let controller = {
                 return res.status(404).json({ status: 404, message: 'Meal not found' });
             }
             if (mealResults[0].cookId !== userId) {
-                return res.status(403).json({ status: 403, message: 'Unauthorized to view participants' });
+                return res.status(403).json({ status: 403, message: 'Unauthorized to view participants for this meal' });
             }
     
             pool.query('SELECT user.id, user.firstName, user.lastName, user.emailAdress, user.street, user.city FROM meal_participants_user JOIN user ON meal_participants_user.userId = user.id WHERE meal_participants_user.mealId = ?', [mealId], (err, results) => {
@@ -111,6 +111,7 @@ let controller = {
                 }
                 res.status(200).json({
                     status: 200,
+                    message: 'Users retrieved succesfully',
                     data: results
                 });
             });
@@ -143,6 +144,7 @@ let controller = {
                 }
                 res.status(200).json({
                     status: 200,
+                    message: 'Participant found',
                     data: results[0]
                 });
             });
