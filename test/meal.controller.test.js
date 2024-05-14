@@ -72,7 +72,7 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
             name: 'meal',
             description: 'my meal',
             imageUrl: 'url',
-            dateTime: new Date().toISOString(),
+            dateTime: '2022-05-22 17:30:00',
             maxAmountOfParticipants: 2,
             price: 2.5,
             cookId: 1
@@ -95,7 +95,7 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
                 name: 'meal',
                 description: 'my meal',
                 imageUrl: 'url',
-                dateTime: new Date().toISOString(),
+                dateTime: '2022-05-22 17:30:00',
                 maxAmountOfParticipants: 2,
                 price: 2.5,
                 cookId: 1
@@ -119,7 +119,7 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
                 name: 'meal',
                 description: 'my meal',
                 imageUrl: 'url',
-                dateTime: new Date().toISOString(),
+                dateTime: '2022-05-22 17:30:00',
                 maxAmountOfParticipants: 2,
                 price: 2.5,
                 cookId: 1
@@ -143,7 +143,7 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
             // name: 'meal',
             description: 'my meal',
             imageUrl: 'url',
-            dateTime: new Date().toISOString(),
+            dateTime: '2022-05-22 17:30:00',
             // maxAmountOfParticipants: 2,
             // price: 2.5,
             cookId: 1
@@ -166,7 +166,7 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
                 name: 'meal',
                 description: 'my meal',
                 imageUrl: 'url',
-                dateTime: new Date().toISOString(),
+                dateTime: '2022-05-22 17:30:00',
                 maxAmountOfParticipants: 2,
                 price: 2.5,
                 cookId: 1
@@ -189,7 +189,7 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
                 name: 'meal',
                 description: 'my meal',
                 imageUrl: 'url',
-                dateTime: new Date().toISOString(),
+                dateTime: '2022-05-22 17:30:00',
                 maxAmountOfParticipants: 2,
                 price: 2.5,
                 cookId: 1
@@ -212,7 +212,7 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
                     name: 'meal',
                     description: 'my meal',
                     imageUrl: 'url',
-                    dateTime: new Date().toISOString(),
+                    dateTime: '2022-05-22 17:30:00',
                     maxAmountOfParticipants: 2,
                     price: 2.5,
                     cookId: 1
@@ -235,7 +235,7 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
                     name: 'updated meal',
                     description: 'my meal',
                     imageUrl: 'url',
-                    dateTime: new Date().toISOString(),
+                    dateTime: '2022-05-22 17:30:00',
                     maxAmountOfParticipants: 2,
                     price: 2.5,
                     cookId: 1
