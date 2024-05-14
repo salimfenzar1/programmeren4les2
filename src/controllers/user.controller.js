@@ -65,7 +65,6 @@ let controller = {
       }
   
       const user = results[0];
-      console.log("User found, comparing password for user:", user);
  
       const isHashed = user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$');
   
@@ -84,7 +83,7 @@ let controller = {
           { expiresIn: '1h' }
         );
   
-        res.json({ message: 'Login successful', token, user });
+        res.json({ status: 200, message: 'Login successful', token, user });
       } else {
         console.log("Password comparison failed");
         return res.status(401).json({ status: 401, message: 'Authentication failed', data:{} });
@@ -114,21 +113,6 @@ let controller = {
   registerUser: async (req, res, next) => {
     const { firstName, lastName, emailAddress, password, street, city, phoneNumber } = req.body;
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[A-Za-z\d]{8,}$/;
-    const phoneRegex = /^06[-\s]?[0-9]{8}$/;
-
-    if (!emailRegex.test(emailAddress)) {
-      return res.status(400).json({ status: 400, message: 'Invalid email address', data: {} });
-    }
-
-    if (!passwordRegex.test(password)) {
-      return res.status(400).json({ status: 400, message: 'Invalid password', data:{} });
-    }
-    
-    if (!phoneRegex.test(phoneNumber)) {
-      return res.status(400).json({ status: 400, message: 'Invalid phone number. Phone number must be 10 digits and start with 06', data:{} });
-    }
     const existingUser = await new Promise((resolve, reject) => {
       pool.query('SELECT id FROM user WHERE emailAdress = ?', [emailAddress], (err, results) => {
         if (err) {
@@ -233,53 +217,68 @@ let controller = {
         }
 
         const user = results[0];
-        
-        res.json({
-            Id: user.id,
-            Name: user.firstName + ' ' + user.lastName,
-            Email: user.emailAdress,
-            Address: user.city + ' ' + user.street,
-            Description: 'This is your account'
-        });
+
+        res.status(200).json({
+          status: 200,
+          message: 'User retrieved successfully',
+          data: user
+      });
     });
 },
 
-  deleteUser: (req, res, next) => {
-    const { id } = req.params;
+deleteUser: (req, res, next) => {
+  const { id } = req.params;
 
-    pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
-      if (err || results.length === 0) {
-        return res.status(404).json({ status: 404, message: 'User not found', data:{} });
-      }
+  pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ status: 500, message: 'Internal server error' });
+    }
 
-      pool.query('DELETE FROM user WHERE id = ?', [id], (err) => {
-        if (err) {
-          console.error('Error deleting user:', err);
-          return res.status(500).json({ status: 500, message: 'Internal server error' });
-        }
-
-        return res.status(200).json({ status: 200, message: 'User deleted successfully' });
-      });
-    });
-  },
-
-  updateUser: (req, res, next) => {
-    const { id } = req.params;
-    const { firstName, lastName, emailAddress, password, street, city } = req.body;
+    if (results.length === 0) {
+      return res.status(404).json({ status: 404, message: 'User not found' });
+    }
 
     if (req.user.userId !== parseInt(id)) {
       return res.status(403).json({
         status: 403,
-        message: 'Unauthorized to update these details'
+        message: 'Unauthorized to delete this user'
       });
     }
 
+    pool.query('DELETE FROM user WHERE id = ?', [id], (err) => {
+      if (err) {
+        console.error('Error deleting user:', err);
+        return res.status(500).json({ status: 500, message: 'Internal server error' });
+      }
+
+      return res.status(200).json({ status: 200, message: 'User deleted successfully' });
+    });
+  });
+},
+  updateUser: (req, res, next) => {
+    const { id } = req.params;
+    const { firstName, lastName, emailAddress, password, street, city } = req.body;
 
     pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
       if (err || results.length === 0) {
         return res.status(404).json({
           status: 404,
           message: 'User not found'
+        });
+      }
+
+      if (req.user.userId !== parseInt(id)) {
+        return res.status(403).json({
+          status: 403,
+          message: 'Unauthorized to update these details'
+        });
+      }
+
+      if (!emailAddress) {
+        return res.status(400).json({
+            status: 400,
+            message: 'Email address is required'
         });
       }
 
@@ -321,7 +320,7 @@ let controller = {
               if (err) {
                 return res.status(400).json({ status: 400, message: err });
               }
-              res.status(200).json({ message: 'User updated successfully', user: updatedUser });
+              res.status(200).json({ status: 200,  message: 'User updated successfully', data: updatedUser });
             }
           );
         });
