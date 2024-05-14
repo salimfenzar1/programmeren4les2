@@ -84,7 +84,70 @@ let controller = {
                 });
             });
         });
-    }
+    },
+    getParticipants: (req, res, next) => {
+        const mealId = req.params.mealId;
+        const userId = req.user.userId; 
+    
+        pool.query('SELECT cookId FROM meal WHERE id = ?', [mealId], (err, mealResults) => {
+            if (err) {
+                console.error('Error fetching meal:', err);
+                return res.status(500).json({ status: 500, message: 'Internal server error' });
+            }
+            if (mealResults.length === 0) {
+                return res.status(404).json({ status: 404, message: 'Meal not found' });
+            }
+            if (mealResults[0].cookId !== userId) {
+                return res.status(403).json({ status: 403, message: 'Unauthorized to view participants' });
+            }
+    
+            pool.query('SELECT user.id, user.firstName, user.lastName, user.emailAdress, user.street, user.city FROM meal_participants_user JOIN user ON meal_participants_user.userId = user.id WHERE meal_participants_user.mealId = ?', [mealId], (err, results) => {
+                if (err) {
+                    console.error('Error fetching participants:', err);
+                    return res.status(500).json({ status: 500, message: 'Internal server error' });
+                }
+                if (results.length === 0) {
+                    return res.status(404).json({ status: 404, message: 'No participants found for this meal' });
+                }
+                res.status(200).json({
+                    status: 200,
+                    data: results
+                });
+            });
+        });
+    },
+    getParticipantsById: (req, res, next) => {
+        const mealId = req.params.mealId;
+        const participantId = req.params.participantId;
+        const userId = req.user.userId; 
+    
+        pool.query('SELECT cookId FROM meal WHERE id = ?', [mealId], (err, mealResults) => {
+            if (err) {
+                console.error('Error fetching meal:', err);
+                return res.status(500).json({ status: 500, message: 'Internal server error' });
+            }
+            if (mealResults.length === 0) {
+                return res.status(404).json({ status: 404, message: 'Meal not found' });
+            }
+            if (mealResults[0].cookId !== userId) {
+                return res.status(403).json({ status: 403, message: 'Unauthorized to view participant details' });
+            }
+    
+            pool.query('SELECT user.id, user.firstName, user.lastName, user.emailAdress, user.street, user.city FROM meal_participants_user JOIN user ON meal_participants_user.userId = user.id WHERE meal_participants_user.mealId = ? AND user.id = ?', [mealId, participantId], (err, results) => {
+                if (err) {
+                    console.error('Error fetching participant details:', err);
+                    return res.status(500).json({ status: 500, message: 'Internal server error' });
+                }
+                if (results.length === 0) {
+                    return res.status(404).json({ status: 404, message: 'Participant not found for this meal' });
+                }
+                res.status(200).json({
+                    status: 200,
+                    data: results[0]
+                });
+            });
+        });
+    },
 };
   
   module.exports = controller;
