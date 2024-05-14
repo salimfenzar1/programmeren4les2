@@ -1,0 +1,265 @@
+
+process.env.DB_DATABASE = process.env.DB_DATABASE || 'share-a-meal-testdb';
+
+
+process.env.LOGLEVEL = 'trace';
+
+const chai = require('chai');
+const chaiHttp = require('chai-http');
+const assert = require('assert');
+const jwt = require('jsonwebtoken');
+const jwtSecretKey = require('../src/util/config').secretkey;
+const db = require('../db/mysql-db');
+const server = require('../app');
+const logger = require('../src/util/logger');
+require('dotenv').config();
+
+chai.should();
+chai.use(chaiHttp);
+
+// Database queries
+const CLEAR_MEAL_TABLE = 'DELETE IGNORE FROM `meal`;';
+const CLEAR_PARTICIPANTS_TABLE = 'DELETE IGNORE FROM `meal_participants_user`;';
+const CLEAR_USERS_TABLE = 'DELETE IGNORE FROM `user`;';
+const CLEAR_DB = CLEAR_MEAL_TABLE + CLEAR_PARTICIPANTS_TABLE + CLEAR_USERS_TABLE;
+
+const INSERT_USER = 'INSERT INTO `user` (`id`, `firstName`, `lastName`, `emailAdress`, `password`, `street`, `city` ) VALUES' +
+    '(1, "first", "last", "name@server.nl", "secret", "street", "city");';
+
+    const INSERT_USER2 = 'INSERT INTO `user` (`id`, `firstName`, `lastName`, `emailAdress`, `password`, `street`, `city` ) VALUES' +
+    '(2, "first", "last", "name@server2.nl", "secret", "street", "city");';
+
+const INSERT_MEALS = 'INSERT INTO `meal` (`id`, `name`, `description`, `imageUrl`, `dateTime`, `maxAmountOfParticipants`, `price`, `cookId`) VALUES' +
+    "(1, 'Meal A', 'description', 'image url', NOW(), 5, 6.50, 1)," +
+    "(2, 'Meal B', 'description', 'image url', NOW(), 5, 6.50, 2);";
+
+// Test Setup
+describe('UC-300 to UC-305 Testsuite', () => {
+    let authToken; 
+    beforeEach((done) => {
+        db.getConnection((err, connection) => {
+            if (err) throw err;
+            connection.query(CLEAR_DB + INSERT_USER + INSERT_USER2 + INSERT_MEALS , (error, results, fields) => {
+                connection.release();
+                if (error) throw error;
+                done();
+            });
+        });
+    });
+
+    //inloggen om de functies te gebruiken in de meal database
+it('inloggen om de functies te gebruiken in de meal database', (done) => {
+    chai.request(server)
+        .post('/api/login')
+        .send({ emailAddress: 'name@server.nl', password: 'secret' })
+        .end((err, res) => {
+            res.should.have.status(200);
+            res.body.should.be.an('object').that.includes.all.keys('token');
+            authToken = res.body.token;
+            done();
+        });
+});
+
+    //UC-301 Toevoegen van maaltijd
+     // TC-301-1 Verplicht veld ontbreekt
+ it('TC-301-1 Verplicht veld ontbreekt', (done) => {
+    chai.request(server)
+        .post('/api/meal')
+        .set('Authorization', 'Bearer ' + authToken)
+        .send({
+            //missing isactive
+            // isActive:1,
+            name: 'meal',
+            description: 'my meal',
+            imageUrl: 'url',
+            dateTime: new Date().toISOString(),
+            maxAmountOfParticipants: 2,
+            price: 2.5,
+            cookId: 1
+        })
+        .end((err, res) => {
+            res.should.have.status(400);
+            res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+            res.body.message.should.equal('Missing required fields: isActive');
+            done();
+        });
+});
+
+     // TC-301-2 Niet ingelogd
+     it('TC-301-2 Niet ingelogd', (done) => {
+        chai.request(server)
+            .post('/api/meal')
+            // .set('Authorization', 'Bearer ' + authToken)
+            .send({
+                isActive:1,
+                name: 'meal',
+                description: 'my meal',
+                imageUrl: 'url',
+                dateTime: new Date().toISOString(),
+                maxAmountOfParticipants: 2,
+                price: 2.5,
+                cookId: 1
+            })
+            .end((err, res) => {
+                res.should.have.status(401);
+                res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                res.body.message.should.equal('No token provided');
+                done();
+            });
+    });
+    
+
+       // TC-301-3 Maaltijd succesvol toegevoegd
+       it('TC-301-3 Maaltijd succesvol toegevoegd', (done) => {
+        chai.request(server)
+            .post('/api/meal')
+            .set('Authorization', 'Bearer ' + authToken)
+            .send({
+                isActive:1,
+                name: 'meal',
+                description: 'my meal',
+                imageUrl: 'url',
+                dateTime: new Date().toISOString(),
+                maxAmountOfParticipants: 2,
+                price: 2.5,
+                cookId: 1
+            })
+            .end((err, res) => {
+                res.should.have.status(201);
+                res.body.should.be.an('object').that.includes.all.keys('status', 'message', 'data');
+                res.body.message.should.equal('Meal added successfully');
+                done();
+            });
+    });
+
+        //UC-302 Wijzigen van maaltijdsgegevens
+     // TC-302-1 Verplicht velden “name” en/of “price”en/of “maxAmountOfParticipants” ontbreken
+ it('TC-302-1 Verplicht velden “name” en/of “price”en/of “maxAmountOfParticipants” ontbreken', (done) => {
+    chai.request(server)
+        .put('/api/meal/1')
+        .set('Authorization', 'Bearer ' + authToken)
+        .send({
+            isActive:1,
+            // name: 'meal',
+            description: 'my meal',
+            imageUrl: 'url',
+            dateTime: new Date().toISOString(),
+            // maxAmountOfParticipants: 2,
+            // price: 2.5,
+            cookId: 1
+        })
+        .end((err, res) => {
+            res.should.have.status(400);
+            res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+            res.body.message.should.equal('Missing required update fields: name, price, maxAmountOfParticipants');
+            done();
+        });
+});
+
+     // TC-302-2 Niet ingelogd
+     it('TC-302-2 Niet ingelogd', (done) => {
+        chai.request(server)
+            .put('/api/meal/1')
+            // .set('Authorization', 'Bearer ' + authToken)
+            .send({
+                isActive:1,
+                name: 'meal',
+                description: 'my meal',
+                imageUrl: 'url',
+                dateTime: new Date().toISOString(),
+                maxAmountOfParticipants: 2,
+                price: 2.5,
+                cookId: 1
+            })
+            .end((err, res) => {
+                res.should.have.status(401);
+                res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                res.body.message.should.equal('No token provided');
+                done();
+            });
+    });
+
+       // TC-302-3 Niet de eigenaar van de data
+       it('TC-302-3 Niet de eigenaar van de data', (done) => {
+        chai.request(server)
+            .put('/api/meal/2')
+            .set('Authorization', 'Bearer ' + authToken)
+            .send({
+                isActive:1,
+                name: 'meal',
+                description: 'my meal',
+                imageUrl: 'url',
+                dateTime: new Date().toISOString(),
+                maxAmountOfParticipants: 2,
+                price: 2.5,
+                cookId: 1
+            })
+            .end((err, res) => {
+                res.should.have.status(403);
+                res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                res.body.message.should.equal('Unauthorized to update this meal');
+                done();
+            });
+    });
+
+           // TC-302-4 Maaltijd bestaat niet
+           it('TC-302-4 Maaltijd bestaat niet', (done) => {
+            chai.request(server)
+                .put('/api/meal/100')
+                .set('Authorization', 'Bearer ' + authToken)
+                .send({
+                    isActive:1,
+                    name: 'meal',
+                    description: 'my meal',
+                    imageUrl: 'url',
+                    dateTime: new Date().toISOString(),
+                    maxAmountOfParticipants: 2,
+                    price: 2.5,
+                    cookId: 1
+                })
+                .end((err, res) => {
+                    res.should.have.status(404);
+                    res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                    res.body.message.should.equal('Meal not found');
+                    done();
+                });
+        });
+
+            // TC-302-5 Maaltijd succesvol gewijzigd
+           it('TC-302-5 Maaltijd succesvol gewijzigd', (done) => {
+            chai.request(server)
+                .put('/api/meal/1')
+                .set('Authorization', 'Bearer ' + authToken)
+                .send({
+                    isActive:1,
+                    name: 'updated meal',
+                    description: 'my meal',
+                    imageUrl: 'url',
+                    dateTime: new Date().toISOString(),
+                    maxAmountOfParticipants: 2,
+                    price: 2.5,
+                    cookId: 1
+                })
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.be.an('object').that.includes.all.keys('status', 'message','data');
+                    res.body.message.should.equal('Meal updated successfully');
+                    done();
+                });
+        });
+    
+
+
+    after((done) => {
+        db.getConnection((err, connection) => {
+            if (err) throw err;
+            connection.query(CLEAR_DB, (error, results, fields) => {
+                connection.release();
+                if (error) throw error;
+                done();
+            });
+        });
+    });
+});
+    
+
