@@ -14,7 +14,7 @@ router.get('/api/user', authenticateToken, userController.getAllUsers)
 
 router.post('/api/user',validateEmail, validatePassword,validatePhoneNumber, userController.validateUser, userController.registerUser)
 
-router.post('/api/login', userController.loginUser)
+router.post('/api/login', validatePassword, userController.loginUser)
 
 router.delete('/api/user/:id',authenticateToken, userController.deleteUser)
 

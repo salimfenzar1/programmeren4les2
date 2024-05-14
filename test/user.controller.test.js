@@ -8,7 +8,7 @@ const chai = require('chai');
 const chaiHttp = require('chai-http');
 const assert = require('assert');
 const jwt = require('jsonwebtoken');
-const jwtSecretKey = require('../src/util/config').secretkey;
+const jwtSecret123Key = require('../src/util/config').Secret123key;
 const db = require('../db/mysql-db');
 const server = require('../app');
 const logger = require('../src/util/logger');
@@ -24,15 +24,11 @@ const CLEAR_USERS_TABLE = 'DELETE IGNORE FROM `user`;';
 const CLEAR_DB = CLEAR_MEAL_TABLE + CLEAR_PARTICIPANTS_TABLE + CLEAR_USERS_TABLE;
 
 const INSERT_USER = 'INSERT INTO `user` (`id`, `firstName`, `lastName`, `emailAdress`, `password`, `street`, `city` ) VALUES' +
-    '(1, "first", "last", "name@server.nl", "secret", "street", "city");';
+    '(1, "first", "last", "name@server.nl", "Secret123", "street", "city");';
 
 const INSERT_USER2 = 'INSERT INTO `user` (`id`, `firstName`, `lastName`, `emailAdress`, `password`, `street`, `city` ) VALUES' +
-    '(2, "first", "last", "name@server2.nl", "secret", "street", "city");';   
+    '(2, "first", "last", "name@server2.nl", "Secret123", "street", "city");';   
 
-
-// const INSERT_MEALS = 'INSERT INTO `meal` (`id`, `name`, `description`, `imageUrl`, `dateTime`, `maxAmountOfParticipants`, `price`, `cookId`) VALUES' +
-//     "(1, 'Meal A', 'description', 'image url', NOW(), 5, 6.50, 1)," +
-//     "(2, 'Meal B', 'description', 'image url', NOW(), 5, 6.50, 1);";
 
 // Test Setup
 describe('UC-101 to UC-206 Testsuite', () => {
@@ -58,7 +54,7 @@ describe('UC-101 to UC-206 Testsuite', () => {
             res.should.have.status(400);
             res.body.should.be.an('object').that.includes.all.keys('status', 'message', 'data');
             res.body.status.should.equal(400);
-            res.body.message.should.equal('Missing required fields: emailAddress and/or password');
+            res.body.message.should.equal('Missing password');
             res.body.data.should.be.empty;
             done();
         });
@@ -68,11 +64,11 @@ describe('UC-101 to UC-206 Testsuite', () => {
 it('TC-101-2 Niet-valide wachtwoord', (done) => {
     chai.request(server)
         .post('/api/login')
-        .send({ emailAddress: 'name@server.nl', password: 'wrongpassword' })
+        .send({ emailAddress: 'name@server.nl', password: 'salim' })
         .end((err, res) => {
-            res.should.have.status(401);
+            res.should.have.status(400);
             res.body.should.be.an('object').that.includes.all.keys('status', 'message', 'data');
-            res.body.status.should.equal(401);
+            res.body.message.should.equal('Invalid password');
             res.body.data.should.be.empty;
             done();
         });
@@ -82,7 +78,7 @@ it('TC-101-2 Niet-valide wachtwoord', (done) => {
 it('TC-101-3 Gebruiker bestaat niet', (done) => {
     chai.request(server)
         .post('/api/login')
-        .send({ emailAddress: 'nonexistent@server.nl', password: 'secret' })
+        .send({ emailAddress: 'nonexistent@server.nl', password: 'Secret123' })
         .end((err, res) => {
             res.should.have.status(404);
             res.body.should.be.an('object').that.includes.all.keys('status', 'message', 'data');
@@ -96,7 +92,7 @@ it('TC-101-3 Gebruiker bestaat niet', (done) => {
 it('TC-101-4 Gebruiker succesvol ingelogd', (done) => {
     chai.request(server)
         .post('/api/login')
-        .send({ emailAddress: 'name@server.nl', password: 'secret' })
+        .send({ emailAddress: 'name@server.nl', password: 'Secret123' })
         .end((err, res) => {
             res.should.have.status(200);
             res.body.should.be.an('object').that.includes.all.keys('token');
