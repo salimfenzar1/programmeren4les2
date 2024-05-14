@@ -4,41 +4,37 @@ let controller = {
   addMeal: (req, res, next) => {
     const {
         isActive,
-        isVega,
-        isVegan,
-        isToTakeHome,
+        isVega = 0,   
+        isVegan = 0,  
+        isToTakeHome = 0,
         dateTime,
         maxAmountOfParticipants,
         price,
         imageUrl,
         name,
         description,
-        allergenes
+        allergenes = ''
       } = req.body;
     
       const cookId = req.user.userId; 
     
-      // Valideer de benodigde velden
-      const missingFields = [];
-      if (typeof isActive === 'undefined') missingFields.push('isActive');
-      if (typeof isVega === 'undefined') missingFields.push('isVega');
-      if (typeof isVegan === 'undefined') missingFields.push('isVegan');
-      if (typeof isToTakeHome === 'undefined') missingFields.push('isToTakeHome');
-      if (!dateTime) missingFields.push('dateTime');
-      if (!maxAmountOfParticipants) missingFields.push('maxAmountOfParticipants');
-      if (!price) missingFields.push('price');
-      if (!imageUrl) missingFields.push('imageUrl');
-      if (!name) missingFields.push('name');
-      if (!description) missingFields.push('description');
-      if (!allergenes) missingFields.push('allergenes');
-    
-      if (missingFields.length > 0) {
-        return res.status(400).json({
-          status: 400,
-          message: `Missing required fields: ${missingFields.join(', ')}`,
-          data: {}
-        });
-      }
+
+    const missingFields = [];
+    if (!isActive) missingFields.push('isActive');
+    if (!name) missingFields.push('name');
+    if (!description) missingFields.push('description');
+    if (!imageUrl) missingFields.push('imageUrl');
+    if (!dateTime) missingFields.push('dateTime');
+    if (!maxAmountOfParticipants) missingFields.push('maxAmountOfParticipants');
+    if (!price) missingFields.push('price');
+
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        status: 400,
+        message: `Missing required fields: ${missingFields.join(', ')}`,
+        data: {}
+      });
+    }
     
       pool.query(
         'INSERT INTO meal (isActive, isVega, isVegan, isToTakeHome, dateTime, maxAmountOfParticipants, price, imageUrl, cookId, name, description, allergenes) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)',
@@ -50,8 +46,9 @@ let controller = {
           }
 
           res.status(201).json({
+            status:201,
             message: 'Meal added successfully',
-            meal: {
+            data: {
               id: result.insertId,
               isActive,
               isVega,
@@ -130,7 +127,7 @@ let controller = {
       });
     })
   },
-  updateMeal : (req, res, next) => {
+  updateMeal: (req, res, next) => {
     const { id } = req.params;
     const {
       isActive,
@@ -146,7 +143,18 @@ let controller = {
       allergenes
     } = req.body;
   
-
+    const missingFields = [];
+    if (name === undefined) missingFields.push('name');
+    if (price === undefined) missingFields.push('price');
+    if (maxAmountOfParticipants === undefined) missingFields.push('maxAmountOfParticipants');
+  
+    if (missingFields.length > 0) {
+      return res.status(400).json({
+        status: 400,
+        message: `Missing required update fields: ${missingFields.join(', ')}`
+      });
+    }
+  
     const fieldsToUpdate = [isActive, isVega, isVegan, isToTakeHome, dateTime, maxAmountOfParticipants, price, imageUrl, name, description, allergenes];
     const hasUpdate = fieldsToUpdate.some(field => field !== undefined);
   
@@ -157,8 +165,8 @@ let controller = {
       });
     }
   
-    const userId = req.user.userId; 
-
+    const userId = req.user.userId;
+  
     pool.query('SELECT * FROM meal WHERE id = ?', [id], (err, results) => {
       if (err || results.length === 0) {
         return res.status(404).json({
@@ -195,11 +203,11 @@ let controller = {
             return res.status(400).json({ status: 400, message: err });
           }
   
-          res.status(200).json({ message: 'Meal updated successfully', meal: updatedMeal });
+          res.status(200).json({status:200, message: 'Meal updated successfully', data: updatedMeal });
         }
       );
     });
-    }
+  }
 }
 
 module.exports = controller;

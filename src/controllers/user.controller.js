@@ -65,7 +65,6 @@ let controller = {
       }
   
       const user = results[0];
-      console.log("User found, comparing password for user:", user);
  
       const isHashed = user.password.startsWith('$2a$') || user.password.startsWith('$2b$') || user.password.startsWith('$2y$');
   
@@ -84,7 +83,7 @@ let controller = {
           { expiresIn: '1h' }
         );
   
-        res.json({ message: 'Login successful', token, user });
+        res.json({ status: 200, message: 'Login successful', token, user });
       } else {
         console.log("Password comparison failed");
         return res.status(401).json({ status: 401, message: 'Authentication failed', data:{} });
@@ -112,14 +111,22 @@ let controller = {
   },
 
   registerUser: async (req, res, next) => {
-    const { firstName, lastName, emailAddress, password, street, city } = req.body;
+    const { firstName, lastName, emailAddress, password, street, city, phoneNumber } = req.body;
 
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/;
-  
-    if (!emailRegex.test(emailAddress)) {
-      return res.status(400).json({ status: 400, message: 'Invalid email address' , data: {} });
+    const existingUser = await new Promise((resolve, reject) => {
+      pool.query('SELECT id FROM user WHERE emailAdress = ?', [emailAddress], (err, results) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(results.length > 0 ? results[0] : null);
+        }
+      });
+    });
+
+    if (existingUser) {
+      return res.status(403).json({ status: 403, message: 'User already exists', data: {} });
     }
-  
+
     bcrypt.genSalt(10, async (err, salt) => {
       if (err) {
         return res.status(500).json({ status: 500, message: 'Error generating salt' });
@@ -131,15 +138,15 @@ let controller = {
         }
   
         pool.query(
-          'INSERT INTO user (firstName, lastName, emailAdress, password, street, city) VALUES (?, ?, ?, ?, ?, ?)',
-          [firstName, lastName, emailAddress, hashedPassword, street, city],
+          'INSERT INTO user (firstName, lastName, emailAdress, password, street, city, phoneNumber) VALUES (?, ?, ?, ?, ?, ?,?)',
+          [firstName, lastName, emailAddress, hashedPassword, street, city, phoneNumber],
           (err, result) => {
             if (err) {
-              return res.status(400).json({ status: 400, message: err });
+              return res.status(400).json({ status: 400, message: err ,data:{}});
             }
             res.status(201).json({
               message: 'User registered successfully',
-              user: { id: result.insertId, firstName, lastName, emailAddress, street, city }
+              user: { id: result.insertId, firstName, lastName, emailAddress, street, city, phoneNumber }
             });
           }
         );
@@ -210,53 +217,68 @@ let controller = {
         }
 
         const user = results[0];
-        
-        res.json({
-            Id: user.id,
-            Name: user.firstName + ' ' + user.lastName,
-            Email: user.emailAdress,
-            Address: user.city + ' ' + user.street,
-            Description: 'This is your account'
-        });
+
+        res.status(200).json({
+          status: 200,
+          message: 'User retrieved successfully',
+          data: user
+      });
     });
 },
 
-  deleteUser: (req, res, next) => {
-    const { id } = req.params;
+deleteUser: (req, res, next) => {
+  const { id } = req.params;
 
-    pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
-      if (err || results.length === 0) {
-        return res.status(404).json({ status: 404, message: 'User not found', data:{} });
-      }
+  pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
+    if (err) {
+      console.error('Database error:', err);
+      return res.status(500).json({ status: 500, message: 'Internal server error' });
+    }
 
-      pool.query('DELETE FROM user WHERE id = ?', [id], (err) => {
-        if (err) {
-          console.error('Error deleting user:', err);
-          return res.status(500).json({ status: 500, message: 'Internal server error' });
-        }
-
-        return res.status(200).json({ status: 200, message: 'User deleted successfully' });
-      });
-    });
-  },
-
-  updateUser: (req, res, next) => {
-    const { id } = req.params;
-    const { firstName, lastName, emailAddress, password, street, city } = req.body;
+    if (results.length === 0) {
+      return res.status(404).json({ status: 404, message: 'User not found' });
+    }
 
     if (req.user.userId !== parseInt(id)) {
       return res.status(403).json({
         status: 403,
-        message: 'Unauthorized to update these details'
+        message: 'Unauthorized to delete this user'
       });
     }
 
+    pool.query('DELETE FROM user WHERE id = ?', [id], (err) => {
+      if (err) {
+        console.error('Error deleting user:', err);
+        return res.status(500).json({ status: 500, message: 'Internal server error' });
+      }
+
+      return res.status(200).json({ status: 200, message: 'User deleted successfully' });
+    });
+  });
+},
+  updateUser: (req, res, next) => {
+    const { id } = req.params;
+    const { firstName, lastName, emailAddress, password, street, city } = req.body;
 
     pool.query('SELECT * FROM user WHERE id = ?', [id], (err, results) => {
       if (err || results.length === 0) {
         return res.status(404).json({
           status: 404,
           message: 'User not found'
+        });
+      }
+
+      if (req.user.userId !== parseInt(id)) {
+        return res.status(403).json({
+          status: 403,
+          message: 'Unauthorized to update these details'
+        });
+      }
+
+      if (!emailAddress) {
+        return res.status(400).json({
+            status: 400,
+            message: 'Email address is required'
         });
       }
 
@@ -298,7 +320,7 @@ let controller = {
               if (err) {
                 return res.status(400).json({ status: 400, message: err });
               }
-              res.status(200).json({ message: 'User updated successfully', user: updatedUser });
+              res.status(200).json({ status: 200,  message: 'User updated successfully', data: updatedUser });
             }
           );
         });
