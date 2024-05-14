@@ -24,10 +24,10 @@ const CLEAR_USERS_TABLE = 'DELETE IGNORE FROM `user`;';
 const CLEAR_DB = CLEAR_MEAL_TABLE + CLEAR_PARTICIPANTS_TABLE + CLEAR_USERS_TABLE;
 
 const INSERT_USER = 'INSERT INTO `user` (`id`, `firstName`, `lastName`, `emailAdress`, `password`, `street`, `city` ) VALUES' +
-    '(1, "first", "last", "name@server.nl", "secret", "street", "city");';
+    '(1, "first", "last", "name@server.nl", "Secret123", "street", "city");';
 
     const INSERT_USER2 = 'INSERT INTO `user` (`id`, `firstName`, `lastName`, `emailAdress`, `password`, `street`, `city` ) VALUES' +
-    '(2, "first", "last", "name@server2.nl", "secret", "street", "city");';
+    '(2, "first", "last", "name@server2.nl", "Secret123", "street", "city");';
 
 const INSERT_MEALS = 'INSERT INTO `meal` (`id`, `name`, `description`, `imageUrl`, `dateTime`, `maxAmountOfParticipants`, `price`, `cookId`) VALUES' +
     "(1, 'Meal A', 'description', 'image url', NOW(), 5, 6.50, 1)," +
@@ -51,7 +51,7 @@ describe('UC-300 to UC-305 Testsuite', () => {
 it('inloggen om de functies te gebruiken in de meal database', (done) => {
     chai.request(server)
         .post('/api/login')
-        .send({ emailAddress: 'name@server.nl', password: 'secret' })
+        .send({ emailAddress: 'name@server.nl', password: 'Secret123' })
         .end((err, res) => {
             res.should.have.status(200);
             res.body.should.be.an('object').that.includes.all.keys('token');
