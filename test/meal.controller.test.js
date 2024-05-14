@@ -22,6 +22,12 @@ const CLEAR_MEAL_TABLE = 'DELETE IGNORE FROM `meal`;';
 const CLEAR_PARTICIPANTS_TABLE = 'DELETE IGNORE FROM `meal_participants_user`;';
 const CLEAR_USERS_TABLE = 'DELETE IGNORE FROM `user`;';
 const CLEAR_DB = CLEAR_MEAL_TABLE + CLEAR_PARTICIPANTS_TABLE + CLEAR_USERS_TABLE;
+const INSERT_PARTICIPANTS = `
+INSERT INTO \`meal_participants_user\` (\`mealId\`, \`userId\`) VALUES
+(1, 1),
+(1, 2),
+(2, 2);
+`;
 
 const INSERT_USER = 'INSERT INTO `user` (`id`, `firstName`, `lastName`, `emailAdress`, `password`, `street`, `city` ) VALUES' +
     '(1, "first", "last", "name@server.nl", "secret", "street", "city");';
@@ -41,7 +47,7 @@ describe('UC-300 to UC-305 Testsuite', () => {
     beforeEach((done) => {
         db.getConnection((err, connection) => {
             if (err) throw err;
-            connection.query(CLEAR_DB + INSERT_USER + INSERT_USER2 + INSERT_MEALS , (error, results, fields) => {
+            connection.query(CLEAR_DB + INSERT_USER + INSERT_USER2 + INSERT_MEALS + INSERT_PARTICIPANTS, (error, results, fields) => {
                 connection.release();
                 if (error) throw error;
                 done();
@@ -371,12 +377,12 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
                   // TC-401-3 Succesvol aangemeld
                   it('TC-401-3 Succesvol aangemeld', (done) => {
                     chai.request(server)
-                        .post('/api/meal/1/participate')
+                        .post('/api/meal/2/participate')
                         .set('Authorization', 'Bearer ' + authToken)
                         .end((err, res) => {
                             res.should.have.status(200);
                             res.body.should.be.an('object').that.includes.all.keys('status', 'message');
-                            res.body.message.should.equal('User with ID 1 is registered for meal with ID 1');
+                            res.body.message.should.equal('User with ID 1 is registered for meal with ID 2');
                             done();
                         });
                 });
@@ -459,6 +465,112 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
                                     });
                             });
                     });
+
+                    
+                      // TC-403-1 Opvragen van deelnemers
+                      it('TC-403-1 Opvragen van deelnemers', (done) => {
+                        chai.request(server)
+                            .get('/api/meal/1/participants')
+                            .set('Authorization', 'Bearer ' + authToken)
+                            .end((err, res) => {
+                                res.should.have.status(200);
+                                res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                res.body.message.should.equal('Users retrieved succesfully');
+                                done();
+                            });
+                    });
+
+                       // TC-403-2 Opvragen van deelnemers zonder in te loggen
+                       it('TC-403-2 Opvragen van deelnemers zonder in te loggen', (done) => {
+                        chai.request(server)
+                            .get('/api/meal/1/participants')
+                            // .set('Authorization', 'Bearer ' + authToken)
+                            .end((err, res) => {
+                                res.should.have.status(401);
+                                res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                res.body.message.should.equal('No token provided');
+                                done();
+                            });
+                    });
+                    // TC-403-3 Opvragen van deelnemers met niet bestaande meal
+                    it('TC-403-3 Opvragen van deelnemers met niet bestaande meal', (done) => {
+                        chai.request(server)
+                            .get('/api/meal/10/participants')
+                            .set('Authorization', 'Bearer ' + authToken)
+                            .end((err, res) => {
+                                res.should.have.status(404);
+                                res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                res.body.message.should.equal('Meal not found');
+                                done();
+                            });
+                    });
+
+                        // TC-403-3 Opvragen van deelnemers met niet bestaande meal
+                        it('TC-403-3 Opvragen van deelnemers met niet bestaande meal', (done) => {
+                            chai.request(server)
+                                .get('/api/meal/10/participants')
+                                .set('Authorization', 'Bearer ' + authToken)
+                                .end((err, res) => {
+                                    res.should.have.status(404);
+                                    res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                    res.body.message.should.equal('Meal not found');
+                                    done();
+                                });
+                        });
+
+                             // UC-404 Opvragen van details van deelnemer
+                             it('TC-404-1 Opvragen van details van deelnemer', (done) => {
+                                chai.request(server)
+                                    .get('/api/meal/1/participants/1')
+                                    .set('Authorization', 'Bearer ' + authToken)
+                                    .end((err, res) => {
+                                        res.should.have.status(200);
+                                        res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                        res.body.message.should.equal('Participant found');
+                                        done();
+                                    });
+                            });
+
+                              // UC-404 Opvragen van details van deelnemer zonder in te loggen
+                              it('TC-404-2 Opvragen van details van deelnemer zonder in te loggen', (done) => {
+                                chai.request(server)
+                                    .get('/api/meal/1/participants/1')
+                                    // .set('Authorization', 'Bearer ' + authToken)
+                                    .end((err, res) => {
+                                        res.should.have.status(401);
+                                        res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                        res.body.message.should.equal('No token provided');
+                                        done();
+                                    });
+                            });
+
+                               // UC-404 Opvragen van details van deelnemer die niet bestaat
+                               it('TC-404-4 Opvragen van details van deelnemer die niet bestaat', (done) => {
+                                chai.request(server)
+                                    .get('/api/meal/1/participants/10')
+                                    .set('Authorization', 'Bearer ' + authToken)
+                                    .end((err, res) => {
+                                        res.should.have.status(404);
+                                        res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                        res.body.message.should.equal('Participant not found for this meal');
+                                        done();
+                                    });
+                            });
+
+                              // UC-404 Opvragen van details van deelnemer met niet bestaande meal
+                               it('TC-404-5 Opvragen van details van deelnemer met niet bestaande meal', (done) => {
+                                chai.request(server)
+                                    .get('/api/meal/100/participants/1')
+                                    .set('Authorization', 'Bearer ' + authToken)
+                                    .end((err, res) => {
+                                        res.should.have.status(404);
+                                        res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                                        res.body.message.should.equal('Meal not found');
+                                        done();
+                                    });
+                            });
+
+
 
 
 
