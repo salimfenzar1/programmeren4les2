@@ -247,7 +247,97 @@ it('inloggen om de functies te gebruiken in de meal database', (done) => {
                     done();
                 });
         });
-    
+
+        //UC-303 Opvragen van alle maaltijden
+        // TC-303-1 Lijst van maaltijden geretourneerd
+           it('TC-303-1 Lijst van maaltijden geretourneerd', (done) => {
+            chai.request(server)
+                .get('/api/meal')
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.be.an('object').that.includes.all.keys('status', 'message','data');
+                    res.body.message.should.equal('Meals retrieved successfully');
+                    done();
+                });
+        });
+
+            //UC-304 Opvragen van maaltijd bij ID
+            //TC-304-1 Maaltijd bestaat niet
+          it('TC-304-1 Maaltijd bestaat niet', (done) => {
+            chai.request(server)
+                .get('/api/meal/100')
+                .end((err, res) => {
+                    res.should.have.status(404);
+                    res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                    res.body.message.should.equal('Meal not found');
+                    done();
+                });
+        });
+            //TC-304-2 Details van maaltijd geretourneerd
+          it('TC-304-2 Details van maaltijd geretourneerd', (done) => {
+            chai.request(server)
+                .get('/api/meal/1')
+                .end((err, res) => {
+                    res.should.have.status(200);
+                    res.body.should.be.an('object').that.includes.all.keys('status', 'message','data');
+                    res.body.message.should.equal('Meal retrieved successfully');
+                    done();
+                });
+        });
+
+        //UC-305 Verwijderen van maaltijd
+        // TC-305-1 Niet ingelogd
+        it('TC-305-1 Niet ingelogd', (done) => {
+            chai.request(server)
+                .delete('/api/meal/1')
+                // .set('Authorization', 'Bearer ' + authToken)
+                .end((err, res) => {
+                    res.should.have.status(401);
+                    res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                    res.body.message.should.equal('No token provided');
+                    done();
+                });
+        });
+
+          // TC-305-2 Niet de eigenaar van de data
+          it('TC-305-2 Niet de eigenaar van de data', (done) => {
+            chai.request(server)
+                .delete('/api/meal/2')
+                .set('Authorization', 'Bearer ' + authToken)
+                .end((err, res) => {
+                    res.should.have.status(403);
+                    res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                    res.body.message.should.equal('Unauthorized to delete this meal');
+                    done();
+                });
+        });
+
+              // TC-305-3 Maaltijd bestaat niet
+              it('TC-305-3 Maaltijd bestaat niet', (done) => {
+                chai.request(server)
+                    .delete('/api/meal/100')
+                    .set('Authorization', 'Bearer ' + authToken)
+                    .end((err, res) => {
+                        res.should.have.status(404);
+                        res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                        res.body.message.should.equal('Meal not found');
+                        done();
+                    });
+            });
+
+                 // TC-305-4 Maaltijd succesvol verwijderd
+                 it('TC-305-4 Maaltijd succesvol verwijderd', (done) => {
+                    let id = 1
+                    chai.request(server)
+                        .delete('/api/meal/' + id)
+                        .set('Authorization', 'Bearer ' + authToken)
+                        .end((err, res) => {
+                            res.should.have.status(200);
+                            res.body.should.be.an('object').that.includes.all.keys('status', 'message');
+                            res.body.message.should.equal('Meal deleted successfully with id:' + id);
+                            done();
+                        });
+                });
 
 
     after((done) => {
